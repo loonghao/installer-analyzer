@@ -163,13 +163,26 @@ cargo install --path .
 # 运行所有测试
 cargo test
 
+# 仅运行单元测试
+cargo test --lib
+
+# 仅运行集成测试
+cargo test --test '*'
+
 # 运行特定分析器测试
 cargo test msi
 cargo test nsis
 
-# 使用测试数据运行
+# 运行带覆盖率的测试
+cargo test --all-features
+
+# 运行文档测试
+cargo test --doc
+
+# 使用测试数据运行（示例二进制文件）
 cargo run --bin test_msi
 cargo run --bin test_file_tree
+cargo run --bin test_all_files
 ```
 
 ## 📖 文档

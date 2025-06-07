@@ -229,11 +229,23 @@ cargo install --path .
 # Run all tests with verbose output
 cargo test -- --nocapture
 
+# Run unit tests only
+cargo test --lib
+
+# Run integration tests only
+cargo test --test '*'
+
 # Run specific analyzer tests
 cargo test msi::tests
 cargo test nsis::tests
 
-# Run integration tests with real files
+# Run tests with coverage
+cargo test --all-features
+
+# Run doc tests
+cargo test --doc
+
+# Run with test data (example binaries)
 cargo run --bin test_msi
 cargo run --bin test_file_tree
 cargo run --bin test_all_files
