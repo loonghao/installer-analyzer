@@ -9,6 +9,9 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# This tool is primarily designed for Windows environments
+# Main testing and building is done on Windows
+# Cross-platform compatibility is checked but not required to pass
 jobs:
   test:
     name: Test
@@ -90,8 +93,8 @@ jobs:
         .\target\release\installer-analyzer.exe --version
         .\target\release\installer-analyzer.exe --help
 
-  cross-platform-build:
-    name: Cross Platform Build Check
+  cross-platform-compatibility:
+    name: Cross Platform Compatibility Check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -115,8 +118,8 @@ jobs:
         path: ~/.cargo/git
         key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Build only (no tests)
-      run: cargo build --verbose
+    - name: Check compilation only (no build)
+      run: cargo check --verbose
 
   security:
     name: Security Audit

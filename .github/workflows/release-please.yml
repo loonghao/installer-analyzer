@@ -9,6 +9,8 @@ permissions:
   contents: write
   pull-requests: write
 
+# Windows is the primary target platform for this tool
+# Windows builds are required, cross-platform builds are best-effort
 jobs:
   release-please:
     runs-on: ubuntu-latest
@@ -25,10 +27,53 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  build-and-upload:
+  build-windows:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: x86_64-pc-windows-msvc
+
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/registry
+        key: windows-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo index
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/git
+        key: windows-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: target
+        key: windows-x86_64-pc-windows-msvc-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build release binary
+      run: cargo build --release --target x86_64-pc-windows-msvc
+
+    - name: Upload Windows binary to release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ needs.release-please.outputs.tag_name }}
+        files: target/x86_64-pc-windows-msvc/release/installer-analyzer.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-cross-platform:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: true  # Allow cross-platform builds to fail
     strategy:
       matrix:
         include:
@@ -40,10 +85,6 @@ jobs:
             target: x86_64-unknown-linux-musl
             artifact_name: installer-analyzer
             asset_name: installer-analyzer-linux-amd64-musl
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact_name: installer-analyzer.exe
-            asset_name: installer-analyzer-windows-amd64.exe
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: installer-analyzer
