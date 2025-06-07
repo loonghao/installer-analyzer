@@ -1,0 +1,87 @@
+//! Command line interface
+
+use clap::{Parser, Subcommand};
+use std::path::PathBuf;
+
+pub mod commands;
+
+/// Installer Analyzer CLI
+#[derive(Parser)]
+#[command(name = "installer-analyzer")]
+#[command(about = "A comprehensive tool for analyzing software installation packages")]
+#[command(version = env!("CARGO_PKG_VERSION"))]
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Commands,
+
+    /// Enable verbose logging
+    #[arg(short, long, global = true)]
+    pub verbose: bool,
+
+    /// Configuration file path
+    #[arg(short, long, global = true)]
+    pub config: Option<PathBuf>,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    /// Perform static analysis of an installer
+    Analyze {
+        /// Path to the installer file
+        #[arg(short, long)]
+        input: PathBuf,
+
+        /// Output file path
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+
+        /// Output format (json, html, markdown)
+        #[arg(short, long, default_value = "json")]
+        format: String,
+    },
+
+    /// Run installer in sandbox for dynamic analysis
+    Sandbox {
+        /// Path to the installer file
+        #[arg(short, long)]
+        input: PathBuf,
+
+        /// Output file path
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+
+        /// Output format (json, html, markdown)
+        #[arg(short, long, default_value = "json")]
+        format: String,
+
+        /// Maximum execution time in seconds
+        #[arg(short, long, default_value = "300")]
+        timeout: u64,
+
+        /// Enable network monitoring
+        #[arg(short, long)]
+        network: bool,
+    },
+
+    /// Batch process multiple installers
+    Batch {
+        /// Directory containing installer files
+        #[arg(short, long)]
+        input_dir: PathBuf,
+
+        /// Output directory for reports
+        #[arg(short, long)]
+        output_dir: PathBuf,
+
+        /// Output format (json, html, markdown)
+        #[arg(short, long, default_value = "json")]
+        format: String,
+
+        /// Use sandbox analysis
+        #[arg(short, long)]
+        sandbox: bool,
+    },
+
+    /// Show information about supported formats
+    Info,
+}

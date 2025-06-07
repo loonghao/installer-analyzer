@@ -1,0 +1,89 @@
+project_name: installer-analyzer
+
+# Skip Go builds since this is a Rust project
+builds:
+  - skip: true
+
+archives:
+  - id: default
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - README_zh.md
+      - LICENSE
+      - templates/**/*
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - '^style:'
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: 'Bug fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: 'Performance improvements'
+      regexp: "^.*perf[(\\w)]*:+.*$"
+      order: 2
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: loonghao
+    name: installer-analyzer
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## Installer Analyzer {{ .Tag }}
+    
+    A comprehensive tool for analyzing software installation packages.
+    
+    ### Download
+    
+    Choose the appropriate binary for your platform:
+    
+  footer: |
+    ## Installation
+    
+    1. Download the appropriate binary for your platform
+    2. Extract the archive
+    3. Add the binary to your PATH
+    4. Run `installer-analyzer --help` to get started
+    
+    ## What's Changed
+    
+    **Full Changelog**: https://github.com/loonghao/installer-analyzer/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+# Custom archives for pre-built Rust binaries
+archives:
+  - id: default
+    builds_info:
+      group: root
+      owner: root
+    files:
+      - README.md
+      - README_zh.md
+      - LICENSE
+      - templates/**/*
