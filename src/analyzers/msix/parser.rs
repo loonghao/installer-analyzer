@@ -170,7 +170,6 @@ impl MsixParser {
         }
 
         // Extract Capabilities (simplified)
-        search_pos = 0;
         let capability_patterns = ["<Capability", "<DeviceCapability", "<RestrictedCapability"];
         
         for pattern in &capability_patterns {

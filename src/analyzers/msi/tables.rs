@@ -1,7 +1,7 @@
 //! MSI database table structures and queries
 
 use crate::core::{Result, FileEntry, RegistryOperation, RegistryValue, RegistryValueType, FileAttributes};
-use crate::analyzers::msi::database::{MsiDatabase, MsiRecord};
+use crate::analyzers::msi::database::MsiDatabase;
 use std::path::PathBuf;
 use std::collections::HashMap;
 use chrono::Utc;

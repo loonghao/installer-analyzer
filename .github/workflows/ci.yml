@@ -58,6 +58,15 @@ jobs:
     - name: Run clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
 
+    - name: Install nightly toolchain for udeps
+      uses: dtolnay/rust-toolchain@nightly
+
+    - name: Install cargo-udeps
+      run: cargo install cargo-udeps
+
+    - name: Check for unused dependencies
+      run: cargo +nightly udeps --all-targets
+
     - name: Build
       run: cargo build --verbose
 

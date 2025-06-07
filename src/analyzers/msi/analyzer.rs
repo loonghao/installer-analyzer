@@ -1,6 +1,6 @@
 //! Complete MSI analyzer implementation
 
-use crate::core::{Result, AnalyzerError, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
+use crate::core::{Result, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
 use crate::analyzers::{InstallerAnalyzer, common};
 use crate::analyzers::msi::database::MsiDatabase;
 use crate::analyzers::msi::tables::MsiTables;
