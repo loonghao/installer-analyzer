@@ -42,7 +42,7 @@ A comprehensive, cross-platform tool for analyzing software installation package
 ### 🛠️ Developer & Enterprise Tools
 - **Powerful CLI** - Command-line interface with multiple analysis modes
 - **Modular Architecture** - Extensible analyzer framework with plugin support
-- **Cross-Platform** - Native support for Windows, Linux, macOS
+- **Windows-Optimized** - Primary support for Windows with cross-platform compatibility
 - **Batch Processing** - Analyze multiple packages simultaneously
 - **API Integration** - Programmatic access for CI/CD pipelines
 - **Performance Optimized** - Efficient memory usage and fast processing
