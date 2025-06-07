@@ -1,9 +1,9 @@
 //! NSIS data structure parser
 
-use crate::core::{Result, AnalyzerError, FileEntry, FileAttributes, RegistryOperation, RegistryValue, RegistryValueType};
+use crate::core::{Result, FileEntry, FileAttributes, RegistryOperation, RegistryValue, RegistryValueType};
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 
 /// NSIS header structure (simplified)
 #[derive(Debug)]

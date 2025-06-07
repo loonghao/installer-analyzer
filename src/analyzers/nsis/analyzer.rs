@@ -1,11 +1,10 @@
 //! NSIS analyzer implementation
 
-use crate::core::{Result, AnalyzerError, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
+use crate::core::{Result, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
 use crate::analyzers::{InstallerAnalyzer, common};
 use super::parser::NsisParser;
 use async_trait::async_trait;
 use std::path::Path;
-use std::collections::HashMap;
 use chrono::Utc;
 
 /// NSIS installer analyzer
