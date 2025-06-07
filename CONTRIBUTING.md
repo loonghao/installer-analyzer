@@ -31,7 +31,14 @@ Thank you for your interest in contributing to Installer Analyzer! This document
 
 5. Run tests to ensure everything works:
    ```bash
+   # Run all tests
    cargo test
+
+   # Run unit tests only
+   cargo test --lib
+
+   # Run integration tests only
+   cargo test --test '*'
    ```
 
 ## 🔄 Development Workflow
@@ -55,7 +62,17 @@ Thank you for your interest in contributing to Installer Analyzer! This document
 2. Write or update tests for your changes
 3. Ensure all tests pass:
    ```bash
+   # Run all tests
    cargo test
+
+   # Run unit tests
+   cargo test --lib
+
+   # Run integration tests
+   cargo test --test '*'
+
+   # Run with coverage (if cargo-tarpaulin is installed)
+   cargo tarpaulin --out Html
    ```
 
 4. Check code formatting:
@@ -208,12 +225,23 @@ Please include:
 
 ## 🏷️ Release Process
 
-Releases are handled by maintainers:
+This project uses [release-please](https://github.com/googleapis/release-please) for automated releases:
 
-1. Version bump in `Cargo.toml`
-2. Update `CHANGELOG.md`
-3. Create release tag
-4. GitHub Actions builds and publishes binaries
+1. **Conventional Commits**: Use conventional commit messages
+2. **Automatic PRs**: release-please creates release PRs automatically
+3. **Version Bumping**: Versions are bumped based on commit types:
+   - `feat`: Minor version bump (0.1.0 → 0.2.0)
+   - `fix`: Patch version bump (0.1.0 → 0.1.1)
+   - `feat!` or `BREAKING CHANGE`: Major version bump (0.1.0 → 1.0.0)
+4. **Changelog**: CHANGELOG.md is updated automatically
+5. **GitHub Releases**: Releases are created with binaries attached
+
+### Manual Release Steps
+
+1. Ensure all changes are merged to `main`
+2. Wait for release-please to create a release PR
+3. Review and merge the release PR
+4. The release will be created automatically with binaries
 
 ## 📞 Getting Help
 
