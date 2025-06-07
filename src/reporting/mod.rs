@@ -1,0 +1,27 @@
+//! Report generation functionality
+
+use crate::core::{Result, AnalysisResult};
+use std::path::Path;
+
+pub mod generator;
+pub mod templates;
+
+// Re-export main types
+pub use generator::ReportGenerator;
+
+/// Report format options
+#[derive(Debug, Clone)]
+pub enum ReportFormat {
+    Json,
+    Html,
+    Markdown,
+}
+
+/// Trait for report generators
+pub trait Reporter {
+    /// Generate report in specified format
+    async fn generate_report(&self, result: &AnalysisResult, format: ReportFormat) -> Result<String>;
+    
+    /// Save report to file
+    async fn save_report(&self, result: &AnalysisResult, format: ReportFormat, output_path: &Path) -> Result<()>;
+}
