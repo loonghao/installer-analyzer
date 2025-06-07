@@ -1,0 +1,142 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: installer-analyzer
+            asset_name: installer-analyzer-linux-amd64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact_name: installer-analyzer
+            asset_name: installer-analyzer-linux-amd64-musl
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: installer-analyzer.exe
+            asset_name: installer-analyzer-windows-amd64.exe
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: installer-analyzer
+            asset_name: installer-analyzer-macos-amd64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: installer-analyzer
+            asset_name: installer-analyzer-macos-arm64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+
+    - name: Install musl tools
+      if: matrix.target == 'x86_64-unknown-linux-musl'
+      run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo index
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: target
+        key: ${{ runner.os }}-${{ matrix.target }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build release binary
+      run: cargo build --release --target ${{ matrix.target }}
+
+    - name: Strip binary (Linux and macOS)
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+      run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+
+    - name: Upload binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.asset_name }}
+        path: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Create release archives
+      run: |
+        mkdir -p dist
+        
+        # Linux AMD64
+        tar -czf dist/installer-analyzer-${{ github.ref_name }}-linux-amd64.tar.gz \
+          -C installer-analyzer-linux-amd64 installer-analyzer \
+          README.md README_zh.md LICENSE templates/
+        
+        # Linux AMD64 MUSL
+        tar -czf dist/installer-analyzer-${{ github.ref_name }}-linux-amd64-musl.tar.gz \
+          -C installer-analyzer-linux-amd64-musl installer-analyzer \
+          README.md README_zh.md LICENSE templates/
+        
+        # Windows AMD64
+        zip -j dist/installer-analyzer-${{ github.ref_name }}-windows-amd64.zip \
+          installer-analyzer-windows-amd64.exe/installer-analyzer.exe \
+          README.md README_zh.md LICENSE
+        cd dist && zip -r installer-analyzer-${{ github.ref_name }}-windows-amd64.zip templates/ && cd ..
+        
+        # macOS AMD64
+        tar -czf dist/installer-analyzer-${{ github.ref_name }}-macos-amd64.tar.gz \
+          -C installer-analyzer-macos-amd64 installer-analyzer \
+          README.md README_zh.md LICENSE templates/
+        
+        # macOS ARM64
+        tar -czf dist/installer-analyzer-${{ github.ref_name }}-macos-arm64.tar.gz \
+          -C installer-analyzer-macos-arm64 installer-analyzer \
+          README.md README_zh.md LICENSE templates/
+
+    - name: Generate checksums
+      run: |
+        cd dist
+        sha256sum *.tar.gz *.zip > checksums.txt
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/*.tar.gz
+          dist/*.zip
+          dist/checksums.txt
+        generate_release_notes: true
+        draft: false
+        prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

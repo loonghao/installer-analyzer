@@ -1,0 +1,74 @@
+[package]
+name = "installer-analyzer"
+version = "0.1.0"
+edition = "2021"
+authors = ["Installer Analyzer Team"]
+description = "A comprehensive tool for analyzing software installation packages and monitoring installation behavior"
+license = "MIT"
+repository = "https://github.com/your-org/installer-analyzer"
+keywords = ["installer", "analysis", "sandbox", "windows", "msi"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+# Windows API bindings
+windows = { version = "0.48", features = [
+    "Win32_Foundation",
+    "Win32_System_Registry",
+    "Win32_Storage_FileSystem",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_Security",
+    "Win32_System_ApplicationInstallationAndServicing",
+] }
+
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+async-trait = "0.1"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# CLI framework
+clap = { version = "4.0", features = ["derive"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Utilities
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# File processing
+zip = "0.6"
+flate2 = "1.0"
+sevenz-rust = "0.5"
+
+# Binary parsing
+nom = "7.0"
+byteorder = "1.4"
+
+# Cryptography
+sha2 = "0.10"
+hex = "0.4"
+
+# Progress bars
+indicatif = "0.17"
+
+# Template engine
+handlebars = "4.0"
+
+# Embed files at compile time
+rust-embed = "8.0"
+
+[dev-dependencies]
+tempfile = "3.0"
+assert_cmd = "2.0"
+predicates = "3.0"
