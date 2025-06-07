@@ -9,9 +9,8 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-# This tool is primarily designed for Windows environments
-# Main testing and building is done on Windows
-# Cross-platform compatibility is checked but not required to pass
+# This tool is designed for Windows environments
+# All testing and building is done on Windows only
 jobs:
   test:
     name: Test
@@ -93,33 +92,7 @@ jobs:
         .\target\release\installer-analyzer.exe --version
         .\target\release\installer-analyzer.exe --help
 
-  cross-platform-compatibility:
-    name: Cross Platform Compatibility Check
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-
-    - name: Cache cargo registry
-      uses: actions/cache@v3
-      with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Cache cargo index
-      uses: actions/cache@v3
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Check compilation only (no build)
-      run: cargo check --verbose
 
   security:
     name: Security Audit

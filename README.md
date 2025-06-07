@@ -9,7 +9,7 @@
 
 [English](README.md) | [中文](README_zh.md)
 
-A comprehensive, cross-platform tool for analyzing software installation packages and monitoring installation behavior. Supports 8 major installer formats with detailed analysis, interactive reporting, and modern web-based visualization.
+A comprehensive Windows tool for analyzing software installation packages and monitoring installation behavior. Supports 8 major installer formats with detailed analysis, interactive reporting, and modern web-based visualization.
 
 ## ✨ Features
 
@@ -42,7 +42,7 @@ A comprehensive, cross-platform tool for analyzing software installation package
 ### 🛠️ Developer & Enterprise Tools
 - **Powerful CLI** - Command-line interface with multiple analysis modes
 - **Modular Architecture** - Extensible analyzer framework with plugin support
-- **Windows-Optimized** - Primary support for Windows with cross-platform compatibility
+- **Windows-Native** - Designed specifically for Windows environments
 - **Batch Processing** - Analyze multiple packages simultaneously
 - **API Integration** - Programmatic access for CI/CD pipelines
 - **Performance Optimized** - Efficient memory usage and fast processing
@@ -54,19 +54,10 @@ A comprehensive, cross-platform tool for analyzing software installation package
 #### Option 1: Download Pre-built Binaries
 Download the latest release from [GitHub Releases](https://github.com/loonghao/installer-analyzer/releases):
 
-```bash
+```powershell
 # Windows (PowerShell)
-Invoke-WebRequest -Uri "https://github.com/loonghao/installer-analyzer/releases/latest/download/installer-analyzer-windows-amd64.zip" -OutFile "installer-analyzer.zip"
-Expand-Archive installer-analyzer.zip
-.\installer-analyzer\installer-analyzer.exe --help
-
-# Linux
-curl -L "https://github.com/loonghao/installer-analyzer/releases/latest/download/installer-analyzer-linux-amd64.tar.gz" | tar xz
-./installer-analyzer --help
-
-# macOS
-curl -L "https://github.com/loonghao/installer-analyzer/releases/latest/download/installer-analyzer-macos-amd64.tar.gz" | tar xz
-./installer-analyzer --help
+Invoke-WebRequest -Uri "https://github.com/loonghao/installer-analyzer/releases/latest/download/installer-analyzer-windows-amd64.exe" -OutFile "installer-analyzer.exe"
+.\installer-analyzer.exe --help
 ```
 
 #### Option 2: Build from Source
@@ -198,10 +189,7 @@ installer-analyzer/
 
 - **Rust 1.70+** - Latest stable Rust toolchain
 - **Git** - Version control
-- **Platform-specific tools**:
-  - Windows: MSVC Build Tools or Visual Studio
-  - Linux: GCC or Clang, pkg-config
-  - macOS: Xcode Command Line Tools
+- **Windows Build Tools** - MSVC Build Tools or Visual Studio
 
 ### Building from Source
 
@@ -260,18 +248,14 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo doc --open
 ```
 
-### Cross-Platform Building
+### Windows Building
 
 ```bash
-# Install cross-compilation targets
-rustup target add x86_64-pc-windows-msvc
-rustup target add x86_64-unknown-linux-gnu
-rustup target add x86_64-apple-darwin
+# Build for Windows (default target)
+cargo build --release
 
-# Build for specific targets
+# Build for specific Windows target
 cargo build --release --target x86_64-pc-windows-msvc
-cargo build --release --target x86_64-unknown-linux-gnu
-cargo build --release --target x86_64-apple-darwin
 ```
 
 ## 📖 Documentation
