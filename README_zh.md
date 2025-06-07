@@ -4,40 +4,48 @@
 [![Release](https://github.com/loonghao/installer-analyzer/workflows/Release/badge.svg)](https://github.com/loonghao/installer-analyzer/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.70+-blue.svg)](https://www.rust-lang.org)
+[![Downloads](https://img.shields.io/github/downloads/loonghao/installer-analyzer/total.svg)](https://github.com/loonghao/installer-analyzer/releases)
+[![Stars](https://img.shields.io/github/stars/loonghao/installer-analyzer.svg)](https://github.com/loonghao/installer-analyzer/stargazers)
 
 [English](README.md) | [中文](README_zh.md)
 
-一个用于分析软件安装包和监控安装行为的综合工具。支持多种安装包格式，提供详细分析和交互式报告。
+一个功能全面的跨平台软件安装包分析工具，用于分析软件安装包和监控安装行为。支持8种主流安装包格式，提供详细分析、交互式报告和现代化的Web可视化界面。
 
 ## ✨ 功能特性
 
-### 📦 多格式支持
-- **MSI** - Microsoft 安装包
-- **WiX** - WiX 工具集生成的 MSI 包
-- **NSIS** - Nullsoft 脚本安装系统
-- **Squirrel** - Electron 应用安装包
-- **InnoSetup** - Inno Setup 安装包
-- **InstallShield** - 企业级安装包
-- **MSIX/AppX** - 现代 Windows 应用包
-- **Python Wheel** - Python 包格式
+### 📦 多格式支持（8种格式）
+- **MSI** - Microsoft 安装包，支持数据库解析
+- **WiX** - WiX 工具集生成的 MSI 包，支持扩展检测
+- **NSIS** - Nullsoft 脚本安装系统，支持脚本分析
+- **Squirrel** - Electron 应用安装包，支持自动更新检测
+- **InnoSetup** - Inno Setup 安装包，支持脚本解析
+- **InstallShield** - 企业级安装包，支持版本检测
+- **MSIX/AppX** - 现代 Windows 应用包，支持清单解析
+- **Python Wheel** - Python 包格式，支持元数据提取
 
-### 🔍 分析能力
-- **文件提取** - 提取和分析嵌入文件
-- **注册表操作** - 检测注册表修改
-- **元数据提取** - 产品信息、版本、发布者
-- **安全分析** - 文件签名、证书验证
-- **安装模拟** - 沙箱环境支持
+### 🔍 高级分析能力
+- **文件提取** - 提取和分析嵌入文件，支持类型检测
+- **注册表操作** - 检测和分析注册表修改
+- **元数据提取** - 产品信息、版本、发布者、证书
+- **安全分析** - 文件签名、数字证书、信任验证
+- **安装模拟** - 沙箱环境支持（计划中）
+- **依赖分析** - 识别包依赖关系和要求
 
-### 📊 交互式报告
-- **HTML 报告** - 现代化响应式网页界面
-- **文件树视图** - 层次化文件结构，支持搜索
-- **JSON 导出** - 机器可读的分析结果
-- **可视化图表** - 文件类型分布和统计
+### 📊 交互式报告与可视化
+- **现代化 HTML 报告** - 基于 Bootstrap 5 的响应式网页界面
+- **交互式文件树** - 层次化结构，支持展开/折叠
+- **实时搜索** - 即时过滤文件和目录
+- **可视化图表** - 文件类型分布、大小统计和趋势
+- **JSON 导出** - 机器可读的分析结果，支持自动化
+- **详细元数据** - 全面的包信息显示
 
-### 🛠️ 开发者工具
-- **CLI 界面** - 命令行分析工具
-- **模块化架构** - 可扩展的分析器框架
-- **跨平台** - 支持 Windows、Linux、macOS
+### 🛠️ 开发者与企业工具
+- **强大的 CLI** - 命令行界面，支持多种分析模式
+- **模块化架构** - 可扩展的分析器框架，支持插件
+- **跨平台** - 原生支持 Windows、Linux、macOS
+- **批量处理** - 同时分析多个包
+- **API 集成** - 程序化访问，支持 CI/CD 流水线
+- **性能优化** - 高效内存使用和快速处理
 
 ## 🚀 快速开始
 
