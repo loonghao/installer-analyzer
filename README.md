@@ -207,3 +207,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 Made with ❤️ by [loonghao](https://github.com/loonghao)
+
+---
+
+**Ready for review and testing!** 🚀
