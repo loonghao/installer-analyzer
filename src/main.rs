@@ -30,14 +30,19 @@ async fn main() {
             input,
             output,
             format,
-        } => commands::handle_analyze(&input, output.as_deref(), &format).await,
+            open,
+        } => commands::handle_analyze(&input, output.as_deref(), &format, open).await,
         Commands::Sandbox {
             input,
             output,
             format,
             timeout,
             network,
-        } => commands::handle_sandbox(&input, output.as_deref(), &format, timeout, network).await,
+            open,
+        } => {
+            commands::handle_sandbox(&input, output.as_deref(), &format, timeout, network, open)
+                .await
+        }
         Commands::Batch {
             input_dir,
             output_dir,

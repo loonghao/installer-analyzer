@@ -60,5 +60,8 @@ hex = "0.4"
 # Template engine
 handlebars = "4.0"
 
+# Open browser
+open = "5.0"
+
 [dev-dependencies]
 tempfile = "3.0"
