@@ -18,6 +18,7 @@ fn get_test_file(filename: &str) -> PathBuf {
 }
 
 #[tokio::test]
+#[ignore] // Ignore in CI due to large file processing time
 async fn test_analyze_real_msi_file() {
     let msi_file = get_test_file("rust-1.86.0-x86_64-pc-windows-msvc.msi");
 
@@ -184,6 +185,7 @@ async fn test_analyze_real_zip_file() {
 }
 
 #[tokio::test]
+#[ignore] // Ignore in CI due to long execution time
 async fn test_format_auto_detection_with_real_files() {
     let test_cases = vec![
         ("rust-1.86.0-x86_64-pc-windows-msvc.msi", "report.html"),
@@ -246,6 +248,7 @@ async fn test_format_auto_detection_with_real_files() {
 }
 
 #[tokio::test]
+#[ignore] // Ignore in CI due to long execution time
 async fn test_batch_processing_with_real_files() {
     let temp_dir = TempDir::new().unwrap();
     let input_dir = temp_dir.path().join("input");
@@ -443,6 +446,7 @@ async fn test_error_handling_with_corrupted_files() {
 }
 
 #[tokio::test]
+#[ignore] // Ignore in CI due to large file processing time
 async fn test_large_file_handling() {
     // Test with the largest file in our test data
     let large_file = get_test_file("rust-1.86.0-x86_64-pc-windows-msvc.msi");

@@ -20,10 +20,10 @@ if (Test-Path "target/llvm-cov") {
 if ($Full) {
     Write-Host "📊 Running FULL coverage analysis (including real data tests)" -ForegroundColor Yellow
     $testArgs = "--all-features --workspace"
-    $excludeArgs = ""
+    $excludeArgs = "--ignore-filename-regex=`"performance_tests`""
 } else {
     Write-Host "📊 Running FAST coverage analysis (excluding slow tests)" -ForegroundColor Green
-    $testArgs = "--lib"
+    $testArgs = "--lib --tests cli_tests output_tests"
     $excludeArgs = "--ignore-filename-regex=`"real_data_tests|format_specific_tests|performance_tests`""
 }
 
@@ -78,10 +78,9 @@ if (Test-Path "coverage.lcov") {
     # Parse LCOV for basic stats
     $lcovContent = Get-Content "coverage.lcov" -Raw
     $totalLines = ($lcovContent | Select-String "LF:" | Measure-Object).Count
-    $hitLines = ($lcovContent | Select-String "LH:" | Measure-Object).Count
-    
+
     if ($totalLines -gt 0) {
-        Write-Host "  📊 Total source files analyzed" -ForegroundColor White
+        Write-Host "  📊 Total source files analyzed: $totalLines" -ForegroundColor White
         Write-Host "  📈 Line coverage data available in coverage.lcov" -ForegroundColor White
     }
 }

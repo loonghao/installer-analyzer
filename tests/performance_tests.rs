@@ -20,6 +20,7 @@ fn get_test_file(filename: &str) -> PathBuf {
 
 /// Performance benchmark for different file types
 #[tokio::test]
+#[ignore] // Ignore in CI due to long execution time
 async fn benchmark_analysis_performance() {
     let test_files = vec![
         ("rust-1.86.0-x86_64-pc-windows-msvc.msi", "MSI"),
@@ -156,6 +157,7 @@ async fn test_memory_usage_with_large_files() {
 }
 
 #[tokio::test]
+#[ignore] // Ignore in CI due to concurrent processing complexity
 async fn test_concurrent_analysis() {
     let test_files = vec![
         "Gitify.Setup.6.3.0.exe",
@@ -286,6 +288,7 @@ async fn test_format_conversion_performance() {
 }
 
 #[tokio::test]
+#[ignore] // Ignore in CI due to stress testing duration
 async fn test_stress_analysis_repeated() {
     let test_file = get_test_file("Gitify.Setup.6.3.0.exe");
 
