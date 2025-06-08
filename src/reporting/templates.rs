@@ -7,7 +7,313 @@ use std::collections::HashMap;
 
 /// Get the embedded HTML template
 pub fn get_report_template() -> &'static str {
-    include_str!("../../templates/report.html")
+    r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installer Analysis Report - {{metadata.product_name}}</title>
+
+    <!-- CDN Dependencies -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --dark-color: #1e293b;
+        }
+
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 12px 12px 0 0 !important;
+        }
+
+        .badge-custom {
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+        }
+
+        .file-tree {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #ffffff;
+        }
+
+        .file-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s;
+        }
+
+        .file-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .metric-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: var(--secondary-color);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .code-hash {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-shield-alt me-2"></i>
+                Installer Analysis Report
+            </span>
+            <span class="navbar-text">
+                <i class="fas fa-clock me-1"></i>
+                Generated: {{analyzed_at}}
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title mb-0">
+                            <i class="fas fa-box me-2"></i>
+                            {{metadata.product_name}}
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Product Name:</strong></td>
+                                        <td>{{metadata.product_name}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Version:</strong></td>
+                                        <td>{{metadata.product_version}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Manufacturer:</strong></td>
+                                        <td>{{metadata.manufacturer}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Format:</strong></td>
+                                        <td><span class="badge bg-primary">{{metadata.format}}</span></td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>File Size:</strong></td>
+                                        <td>{{metadata.file_size_formatted}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>File Hash:</strong></td>
+                                        <td><span class="code-hash">{{metadata.file_hash_short}}</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Analysis Type:</strong></td>
+                                        <td>
+                                            <span class="badge {{analysis_type_class}}">
+                                                <i class="fas {{analysis_type_icon}} me-1"></i>
+                                                {{analysis_type_text}}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Duration:</strong></td>
+                                        <td>{{analysis_duration_formatted}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Analysis Summary
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-primary">{{summary.total_files}}</div>
+                                    <div class="metric-label">Total Files</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-success">{{summary.registry_operations}}</div>
+                                    <div class="metric-label">Registry Operations</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-warning">{{summary.executables}}</div>
+                                    <div class="metric-label">Executables</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-info">{{summary.total_size_formatted}}</div>
+                                    <div class="metric-label">Total Size</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Files Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-folder-open me-2"></i>
+                            Files ({{summary.total_files}} total)
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="file-tree">
+                            {{#each files}}
+                            <div class="file-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-file text-secondary me-2"></i>
+                                        <span class="fw-medium">{{this.path}}</span>
+                                    </div>
+                                    <small class="text-muted">{{this.size_formatted}}</small>
+                                </div>
+                            </div>
+                            {{/each}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registry Operations Section -->
+        {{#if registry_operations}}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-database me-2"></i>
+                            Registry Operations ({{summary.registry_operations}} total)
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Operation</th>
+                                        <th>Key</th>
+                                        <th>Value</th>
+                                        <th>Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{#each registry_operations}}
+                                    <tr>
+                                        <td><span class="badge bg-info">{{this.operation}}</span></td>
+                                        <td><code>{{this.key}}</code></td>
+                                        <td>{{this.value_name}}</td>
+                                        <td>{{this.value_data}}</td>
+                                    </tr>
+                                    {{/each}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{/if}}
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Initialize charts and interactive features
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Installer Analysis Report loaded');
+        });
+    </script>
+</body>
+</html>"#
 }
 
 /// Template data for HTML report generation
