@@ -44,7 +44,7 @@ fn test_cli_help_commands() {
 
     // Test analyze help
     let output = Command::new(&binary)
-        .args(&["analyze", "--help"])
+        .args(["analyze", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -57,7 +57,7 @@ fn test_cli_help_commands() {
 
     // Test sandbox help
     let output = Command::new(&binary)
-        .args(&["sandbox", "--help"])
+        .args(["sandbox", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -68,7 +68,7 @@ fn test_cli_help_commands() {
 
     // Test batch help
     let output = Command::new(&binary)
-        .args(&["batch", "--help"])
+        .args(["batch", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -104,7 +104,7 @@ fn test_analyze_command_format_detection() {
     // Test HTML format detection
     let html_output = temp_dir.path().join("report.html");
     let output = Command::new(&binary)
-        .args(&[
+        .args([
             "analyze",
             "--input",
             installer.to_str().unwrap(),
@@ -124,7 +124,7 @@ fn test_analyze_command_format_detection() {
     // Test JSON format detection
     let json_output = temp_dir.path().join("report.json");
     let output = Command::new(&binary)
-        .args(&[
+        .args([
             "analyze",
             "--input",
             installer.to_str().unwrap(),
@@ -152,7 +152,7 @@ fn test_analyze_command_explicit_format() {
 
     // Test explicit format that differs from extension
     let output = Command::new(&binary)
-        .args(&[
+        .args([
             "analyze",
             "--input",
             installer.to_str().unwrap(),
@@ -184,7 +184,7 @@ fn test_invalid_input_file() {
     let output_file = temp_dir.path().join("report.json");
 
     let output = Command::new(&binary)
-        .args(&[
+        .args([
             "analyze",
             "--input",
             non_existent.to_str().unwrap(),
@@ -216,7 +216,7 @@ fn test_batch_command_empty_directory() {
     std::fs::create_dir(&output_dir).unwrap();
 
     let output = Command::new(&binary)
-        .args(&[
+        .args([
             "batch",
             "--input-dir",
             input_dir.to_str().unwrap(),
@@ -247,7 +247,7 @@ fn test_startup_banner() {
     let output_file = temp_dir.path().join("report.json");
 
     let output = Command::new(&binary)
-        .args(&[
+        .args([
             "analyze",
             "--input",
             installer.to_str().unwrap(),

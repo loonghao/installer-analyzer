@@ -291,7 +291,7 @@ async fn test_batch_processing_with_real_files() {
             // Verify at least one output file has content
             for entry in output_entries {
                 let path = entry.path();
-                if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
+                if path.is_file() && path.extension().is_some_and(|ext| ext == "json") {
                     let content = std::fs::read_to_string(&path).unwrap();
                     if !content.is_empty() {
                         // Try to parse as JSON
