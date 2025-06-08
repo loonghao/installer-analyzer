@@ -7,8 +7,8 @@ use std::collections::HashMap;
 
 /// Get the embedded HTML template
 pub fn get_report_template() -> &'static str {
-    // Use include_str! with absolute path from project root
-    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/report.html"))
+    // Use relative path from src/reporting/ to templates/
+    include_str!("../../templates/report.html")
 }
 
 /// Template data for HTML report generation
