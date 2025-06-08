@@ -186,3 +186,57 @@ pub fn init_console() {
         let _ = console::set_colors_enabled_stderr(true);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_icons_windows_fallback() {
+        // Test that icons are properly defined for both platforms
+        assert!(!Icons::SUCCESS.is_empty());
+        assert!(!Icons::ERROR.is_empty());
+        assert!(!Icons::WARNING.is_empty());
+        assert!(!Icons::INFO.is_empty());
+        assert!(!Icons::FILE.is_empty());
+        assert!(!Icons::FOLDER.is_empty());
+        assert!(!Icons::BROWSER.is_empty());
+        assert!(!Icons::ROCKET.is_empty());
+        assert!(!Icons::GEAR.is_empty());
+        assert!(!Icons::MAGNIFYING_GLASS.is_empty());
+        assert!(!Icons::PACKAGE.is_empty());
+        assert!(!Icons::SHIELD.is_empty());
+    }
+
+    #[test]
+    fn test_icons_platform_specific() {
+        #[cfg(windows)]
+        {
+            assert_eq!(Icons::SUCCESS, "[OK]");
+            assert_eq!(Icons::ERROR, "[ERR]");
+            assert_eq!(Icons::WARNING, "[WARN]");
+        }
+
+        #[cfg(not(windows))]
+        {
+            assert_eq!(Icons::SUCCESS, "✅");
+            assert_eq!(Icons::ERROR, "❌");
+            assert_eq!(Icons::WARNING, "⚠️");
+        }
+    }
+
+    #[test]
+    fn test_progress_bar_creation() {
+        let pb = CliOutput::create_progress_bar(100, "Test message");
+        assert_eq!(pb.length(), Some(100));
+
+        let spinner = CliOutput::create_spinner("Test spinner");
+        assert_eq!(spinner.length(), None); // Spinners have no defined length
+    }
+
+    #[test]
+    fn test_init_console() {
+        // Should not panic
+        init_console();
+    }
+}

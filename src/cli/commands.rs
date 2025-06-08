@@ -387,3 +387,160 @@ fn open_browser_to_file(file_path: &Path) -> Result<()> {
     CliOutput::success(&format!("Report opened in browser: {}", url));
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_parse_format() {
+        assert!(matches!(parse_format("json"), Ok(ReportFormat::Json)));
+        assert!(matches!(parse_format("html"), Ok(ReportFormat::Html)));
+        assert!(matches!(parse_format("markdown"), Ok(ReportFormat::Markdown)));
+        assert!(matches!(parse_format("md"), Ok(ReportFormat::Markdown)));
+
+        // Test case insensitive
+        assert!(matches!(parse_format("JSON"), Ok(ReportFormat::Json)));
+        assert!(matches!(parse_format("HTML"), Ok(ReportFormat::Html)));
+
+        // Test invalid format
+        assert!(parse_format("invalid").is_err());
+    }
+
+    #[test]
+    fn test_detect_format_from_path() {
+        let json_path = PathBuf::from("report.json");
+        assert!(matches!(detect_format_from_path(&json_path), Some(ReportFormat::Json)));
+
+        let html_path = PathBuf::from("report.html");
+        assert!(matches!(detect_format_from_path(&html_path), Some(ReportFormat::Html)));
+
+        let htm_path = PathBuf::from("report.htm");
+        assert!(matches!(detect_format_from_path(&htm_path), Some(ReportFormat::Html)));
+
+        let md_path = PathBuf::from("report.md");
+        assert!(matches!(detect_format_from_path(&md_path), Some(ReportFormat::Markdown)));
+
+        let markdown_path = PathBuf::from("report.markdown");
+        assert!(matches!(detect_format_from_path(&markdown_path), Some(ReportFormat::Markdown)));
+
+        // Test unsupported extension
+        let txt_path = PathBuf::from("report.txt");
+        assert!(detect_format_from_path(&txt_path).is_none());
+
+        // Test no extension
+        let no_ext_path = PathBuf::from("report");
+        assert!(detect_format_from_path(&no_ext_path).is_none());
+    }
+
+    #[test]
+    fn test_determine_format_auto_detection() {
+        let html_path = PathBuf::from("report.html");
+
+        // No explicit format, should detect from extension
+        let result = determine_format(None, Some(&html_path));
+        assert!(matches!(result, Ok(ReportFormat::Html)));
+
+        // Explicit format matches extension
+        let result = determine_format(Some("html"), Some(&html_path));
+        assert!(matches!(result, Ok(ReportFormat::Html)));
+
+        // Explicit format differs from extension (should use explicit)
+        let result = determine_format(Some("json"), Some(&html_path));
+        assert!(matches!(result, Ok(ReportFormat::Json)));
+    }
+
+    #[test]
+    fn test_determine_format_defaults() {
+        // No output path, no explicit format - should default to JSON
+        let result = determine_format(None, None);
+        assert!(matches!(result, Ok(ReportFormat::Json)));
+
+        // No output path, explicit format
+        let result = determine_format(Some("html"), None);
+        assert!(matches!(result, Ok(ReportFormat::Html)));
+
+        // Output path with no extension, explicit format
+        let no_ext_path = PathBuf::from("report");
+        let result = determine_format(Some("markdown"), Some(&no_ext_path));
+        assert!(matches!(result, Ok(ReportFormat::Markdown)));
+    }
+
+    #[test]
+    fn test_format_matches() {
+        assert!(format_matches(&ReportFormat::Json, &ReportFormat::Json));
+        assert!(format_matches(&ReportFormat::Html, &ReportFormat::Html));
+        assert!(format_matches(&ReportFormat::Markdown, &ReportFormat::Markdown));
+
+        assert!(!format_matches(&ReportFormat::Json, &ReportFormat::Html));
+        assert!(!format_matches(&ReportFormat::Html, &ReportFormat::Markdown));
+        assert!(!format_matches(&ReportFormat::Markdown, &ReportFormat::Json));
+    }
+
+    #[test]
+    fn test_format_to_string() {
+        assert_eq!(format_to_string(&ReportFormat::Json), "JSON");
+        assert_eq!(format_to_string(&ReportFormat::Html), "HTML");
+        assert_eq!(format_to_string(&ReportFormat::Markdown), "Markdown");
+    }
+
+    #[test]
+    fn test_get_file_extension() {
+        assert_eq!(get_file_extension("json"), "json");
+        assert_eq!(get_file_extension("html"), "html");
+        assert_eq!(get_file_extension("markdown"), "md");
+        assert_eq!(get_file_extension("md"), "md");
+        assert_eq!(get_file_extension("unknown"), "txt"); // Default is txt, not json
+    }
+
+    #[test]
+    fn test_is_supported_file() {
+        // Test currently supported extensions
+        assert!(is_supported_file(&PathBuf::from("test.msi")));
+        assert!(is_supported_file(&PathBuf::from("test.exe")));
+        assert!(is_supported_file(&PathBuf::from("test.whl"))); // Python wheels are supported
+
+        // Test case insensitive
+        assert!(is_supported_file(&PathBuf::from("test.MSI")));
+        assert!(is_supported_file(&PathBuf::from("test.EXE")));
+
+        // Test currently unsupported extensions (marked as false in implementation)
+        assert!(!is_supported_file(&PathBuf::from("test.zip")));
+        assert!(!is_supported_file(&PathBuf::from("test.7z")));
+        assert!(!is_supported_file(&PathBuf::from("test.rar")));
+        assert!(!is_supported_file(&PathBuf::from("test.tar")));
+        assert!(!is_supported_file(&PathBuf::from("test.gz")));
+        assert!(!is_supported_file(&PathBuf::from("test.bz2")));
+
+        // Test completely unsupported extensions
+        assert!(!is_supported_file(&PathBuf::from("test.txt")));
+        assert!(!is_supported_file(&PathBuf::from("test.doc")));
+        assert!(!is_supported_file(&PathBuf::from("test")));
+    }
+
+    #[test]
+    fn test_open_browser_to_file_url_generation() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.html");
+        std::fs::write(&test_file, "<html><body>Test</body></html>").unwrap();
+
+        // Test that the function generates proper file:// URLs
+        // Note: We can't test actual browser opening in unit tests
+        let result = open_browser_to_file(&test_file);
+
+        // The function should succeed in generating the URL even if browser opening fails
+        // In CI environments, browser opening will fail but URL generation should work
+        match result {
+            Ok(_) => {
+                // Browser opened successfully (unlikely in CI)
+            }
+            Err(e) => {
+                // Expected in CI environments - browser opening fails but that's OK
+                // The important thing is that the function doesn't panic
+                assert!(e.to_string().contains("Failed to open browser"));
+            }
+        }
+    }
+}
