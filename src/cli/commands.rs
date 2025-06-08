@@ -86,7 +86,10 @@ pub async fn handle_sandbox(
     enable_network: bool,
     open_browser: bool,
 ) -> Result<()> {
-    CliOutput::info(&format!("Starting sandbox analysis of: {}", input.display()));
+    CliOutput::info(&format!(
+        "Starting sandbox analysis of: {}",
+        input.display()
+    ));
 
     // Create sandbox configuration
     let config = SandboxConfig {
@@ -164,7 +167,10 @@ pub async fn handle_batch(
         return Ok(());
     }
 
-    CliOutput::info(&format!("Found {} installer files to process", installer_files.len()));
+    CliOutput::info(&format!(
+        "Found {} installer files to process",
+        installer_files.len()
+    ));
 
     // Create progress bar
     let pb = CliOutput::create_progress_bar(installer_files.len() as u64, "Processing installers");
@@ -295,7 +301,10 @@ fn detect_format_from_path(path: &Path) -> Option<ReportFormat> {
 }
 
 /// Determine the final format to use, considering output path and explicit format
-fn determine_format(explicit_format: Option<&str>, output_path: Option<&Path>) -> Result<ReportFormat> {
+fn determine_format(
+    explicit_format: Option<&str>,
+    output_path: Option<&Path>,
+) -> Result<ReportFormat> {
     // If output path is provided, try to detect format from extension
     if let Some(path) = output_path {
         if let Some(detected_format) = detect_format_from_path(path) {
@@ -398,7 +407,10 @@ mod tests {
     fn test_parse_format() {
         assert!(matches!(parse_format("json"), Ok(ReportFormat::Json)));
         assert!(matches!(parse_format("html"), Ok(ReportFormat::Html)));
-        assert!(matches!(parse_format("markdown"), Ok(ReportFormat::Markdown)));
+        assert!(matches!(
+            parse_format("markdown"),
+            Ok(ReportFormat::Markdown)
+        ));
         assert!(matches!(parse_format("md"), Ok(ReportFormat::Markdown)));
 
         // Test case insensitive
@@ -412,19 +424,34 @@ mod tests {
     #[test]
     fn test_detect_format_from_path() {
         let json_path = PathBuf::from("report.json");
-        assert!(matches!(detect_format_from_path(&json_path), Some(ReportFormat::Json)));
+        assert!(matches!(
+            detect_format_from_path(&json_path),
+            Some(ReportFormat::Json)
+        ));
 
         let html_path = PathBuf::from("report.html");
-        assert!(matches!(detect_format_from_path(&html_path), Some(ReportFormat::Html)));
+        assert!(matches!(
+            detect_format_from_path(&html_path),
+            Some(ReportFormat::Html)
+        ));
 
         let htm_path = PathBuf::from("report.htm");
-        assert!(matches!(detect_format_from_path(&htm_path), Some(ReportFormat::Html)));
+        assert!(matches!(
+            detect_format_from_path(&htm_path),
+            Some(ReportFormat::Html)
+        ));
 
         let md_path = PathBuf::from("report.md");
-        assert!(matches!(detect_format_from_path(&md_path), Some(ReportFormat::Markdown)));
+        assert!(matches!(
+            detect_format_from_path(&md_path),
+            Some(ReportFormat::Markdown)
+        ));
 
         let markdown_path = PathBuf::from("report.markdown");
-        assert!(matches!(detect_format_from_path(&markdown_path), Some(ReportFormat::Markdown)));
+        assert!(matches!(
+            detect_format_from_path(&markdown_path),
+            Some(ReportFormat::Markdown)
+        ));
 
         // Test unsupported extension
         let txt_path = PathBuf::from("report.txt");
@@ -472,11 +499,20 @@ mod tests {
     fn test_format_matches() {
         assert!(format_matches(&ReportFormat::Json, &ReportFormat::Json));
         assert!(format_matches(&ReportFormat::Html, &ReportFormat::Html));
-        assert!(format_matches(&ReportFormat::Markdown, &ReportFormat::Markdown));
+        assert!(format_matches(
+            &ReportFormat::Markdown,
+            &ReportFormat::Markdown
+        ));
 
         assert!(!format_matches(&ReportFormat::Json, &ReportFormat::Html));
-        assert!(!format_matches(&ReportFormat::Html, &ReportFormat::Markdown));
-        assert!(!format_matches(&ReportFormat::Markdown, &ReportFormat::Json));
+        assert!(!format_matches(
+            &ReportFormat::Html,
+            &ReportFormat::Markdown
+        ));
+        assert!(!format_matches(
+            &ReportFormat::Markdown,
+            &ReportFormat::Json
+        ));
     }
 
     #[test]

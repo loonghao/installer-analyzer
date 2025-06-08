@@ -1,6 +1,6 @@
 //! Tests for CLI output functionality
 
-use installer_analyzer::cli::output::{CliOutput, Icons, init_console};
+use installer_analyzer::cli::output::{init_console, CliOutput, Icons};
 use std::time::Duration;
 
 #[test]
@@ -33,7 +33,7 @@ fn test_icons_platform_specific_content() {
         assert!(Icons::FOLDER.starts_with('[') && Icons::FOLDER.ends_with(']'));
         assert!(Icons::BROWSER.starts_with('[') && Icons::BROWSER.ends_with(']'));
     }
-    
+
     // Test that non-Windows gets emoji or special characters
     #[cfg(not(windows))]
     {
@@ -48,7 +48,7 @@ fn test_icons_platform_specific_content() {
 fn test_progress_bar_creation() {
     let pb = CliOutput::create_progress_bar(100, "Test progress");
     assert_eq!(pb.length(), Some(100));
-    
+
     // Test that progress bar has the expected message
     // Note: We can't easily test the actual display without complex setup
     pb.finish();
@@ -58,19 +58,19 @@ fn test_progress_bar_creation() {
 fn test_spinner_creation() {
     let spinner = CliOutput::create_spinner("Test spinner");
     assert_eq!(spinner.length(), None); // Spinners have indefinite length
-    
+
     spinner.finish();
 }
 
 #[test]
 fn test_progress_bar_finish_methods() {
     let pb = CliOutput::create_progress_bar(10, "Test");
-    
+
     // Test success finish
     CliOutput::finish_progress_success(&pb, "Success message");
-    
+
     let pb2 = CliOutput::create_progress_bar(10, "Test 2");
-    
+
     // Test error finish
     CliOutput::finish_progress_error(&pb2, "Error message");
 }
@@ -101,7 +101,7 @@ fn test_analysis_summary() {
         Duration::from_secs(5),
         Some(10),
     );
-    
+
     CliOutput::analysis_summary(
         "JSON",
         "/path/to/report.json",
@@ -122,7 +122,7 @@ fn test_batch_summary() {
 fn test_init_console() {
     // Test that console initialization doesn't panic
     init_console();
-    
+
     // Call it multiple times to ensure it's safe
     init_console();
     init_console();
@@ -132,12 +132,12 @@ fn test_init_console() {
 fn test_duration_formatting_in_summaries() {
     // Test various duration formats
     let durations = vec![
-        Duration::from_millis(500),   // 0.5 seconds
-        Duration::from_secs(1),       // 1 second
-        Duration::from_secs(65),      // 1 minute 5 seconds
-        Duration::from_secs(3661),    // 1 hour 1 minute 1 second
+        Duration::from_millis(500), // 0.5 seconds
+        Duration::from_secs(1),     // 1 second
+        Duration::from_secs(65),    // 1 minute 5 seconds
+        Duration::from_secs(3661),  // 1 hour 1 minute 1 second
     ];
-    
+
     for duration in durations {
         CliOutput::analysis_summary("JSON", "/test/path", duration, Some(1));
         CliOutput::batch_summary(1, 0, duration);
@@ -148,14 +148,9 @@ fn test_duration_formatting_in_summaries() {
 fn test_file_count_scenarios() {
     // Test analysis summary with different file counts
     let file_counts = vec![None, Some(0), Some(1), Some(100), Some(1000)];
-    
+
     for count in file_counts {
-        CliOutput::analysis_summary(
-            "HTML",
-            "/test/report.html",
-            Duration::from_secs(1),
-            count,
-        );
+        CliOutput::analysis_summary("HTML", "/test/report.html", Duration::from_secs(1), count);
     }
 }
 
@@ -170,7 +165,7 @@ fn test_batch_processing_scenarios() {
         (100, 0), // Large batch, all successful
         (50, 50), // Large batch, half failed
     ];
-    
+
     for (processed, failed) in scenarios {
         CliOutput::batch_summary(processed, failed, Duration::from_secs(10));
     }
@@ -185,7 +180,7 @@ fn test_format_detection_scenarios() {
         ("markdown", Some("json")), // Mismatch scenario
         ("json", Some("markdown")), // Another mismatch
     ];
-    
+
     for (detected, explicit) in scenarios {
         CliOutput::format_detection(detected, explicit);
     }
@@ -198,10 +193,10 @@ fn test_section_headers_with_various_lengths() {
         "Short",
         "Medium Length Header",
         "Very Long Header That Spans Multiple Words And Contains Lots Of Text",
-        "",  // Empty header
+        "", // Empty header
         "Header with 数字 and émojis! 🚀",
     ];
-    
+
     for header in headers {
         CliOutput::section_header(header);
         CliOutput::subsection_header(header);
@@ -220,7 +215,7 @@ fn test_path_handling_in_output() {
         "path with spaces/file name.ext",
         "path/with/unicode/文件名.txt",
     ];
-    
+
     for path in paths {
         CliOutput::file_info("Test file", path);
         CliOutput::folder_info("Test folder", path);

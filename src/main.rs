@@ -2,8 +2,8 @@
 
 use clap::Parser;
 use installer_analyzer::cli::commands;
+use installer_analyzer::cli::output::{init_console, CliOutput};
 use installer_analyzer::cli::{Cli, Commands};
-use installer_analyzer::cli::output::{CliOutput, init_console};
 use installer_analyzer::utils;
 use std::process;
 
@@ -47,8 +47,15 @@ async fn main() {
             network,
             open,
         } => {
-            commands::handle_sandbox(&input, output.as_deref(), format.as_deref(), timeout, network, open)
-                .await
+            commands::handle_sandbox(
+                &input,
+                output.as_deref(),
+                format.as_deref(),
+                timeout,
+                network,
+                open,
+            )
+            .await
         }
         Commands::Batch {
             input_dir,

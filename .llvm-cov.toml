@@ -1,0 +1,30 @@
+# LLVM Coverage Configuration for installer-analyzer
+
+[coverage]
+# Exclude test files from coverage analysis
+exclude-files = [
+    "tests/real_data_tests.rs",
+    "tests/format_specific_tests.rs", 
+    "tests/performance_tests.rs",
+    "tests/cli_tests.rs",
+    "tests/output_tests.rs"
+]
+
+# Focus on library code coverage
+include-files = [
+    "src/**/*.rs"
+]
+
+# Coverage thresholds
+line-coverage-threshold = 70
+function-coverage-threshold = 60
+region-coverage-threshold = 60
+
+# Output formats
+output-formats = ["html", "lcov", "text"]
+
+# HTML output directory
+html-output-dir = "target/coverage-report"
+
+# LCOV output file
+lcov-output-file = "coverage.lcov"
