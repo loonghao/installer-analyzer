@@ -1,11 +1,11 @@
 //! MSIX/AppX analyzer implementation
 
-use crate::core::{Result, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
-use crate::analyzers::{InstallerAnalyzer, common};
 use super::parser::MsixParser;
+use crate::analyzers::{common, InstallerAnalyzer};
+use crate::core::{FileEntry, InstallerFormat, InstallerMetadata, RegistryOperation, Result};
 use async_trait::async_trait;
-use std::path::Path;
 use chrono::Utc;
+use std::path::Path;
 
 /// MSIX/AppX installer analyzer
 pub struct MsixAnalyzer {
@@ -34,21 +34,23 @@ impl MsixAnalyzer {
         let properties = self.parser.extract_msix_properties(file_path).await?;
 
         // Extract manifest metadata for product info
-        let (product_name, product_version, manufacturer) = match self.parser.extract_manifest(file_path) {
-            Ok(manifest) => {
-                let product_name = Some(manifest.display_name.clone());
-                let product_version = Some(manifest.identity_version.clone());
-                let manufacturer = Some(manifest.publisher_display_name.clone());
-                (product_name, product_version, manufacturer)
-            }
-            Err(_) => {
-                // Fallback to filename parsing
-                let product_name = file_path.file_stem()
-                    .and_then(|s| s.to_str())
-                    .map(|s| s.to_string());
-                (product_name, None, Some("Unknown".to_string()))
-            }
-        };
+        let (product_name, product_version, manufacturer) =
+            match self.parser.extract_manifest(file_path) {
+                Ok(manifest) => {
+                    let product_name = Some(manifest.display_name.clone());
+                    let product_version = Some(manifest.identity_version.clone());
+                    let manufacturer = Some(manifest.publisher_display_name.clone());
+                    (product_name, product_version, manufacturer)
+                }
+                Err(_) => {
+                    // Fallback to filename parsing
+                    let product_name = file_path
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .map(|s| s.to_string());
+                    (product_name, None, Some("Unknown".to_string()))
+                }
+            };
 
         Ok(InstallerMetadata {
             format: InstallerFormat::MSIX,
@@ -64,12 +66,15 @@ impl MsixAnalyzer {
 
     /// Extract files from MSIX/AppX package
     async fn extract_msix_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
-        tracing::info!("Extracting files from MSIX/AppX package: {}", file_path.display());
-        
+        tracing::info!(
+            "Extracting files from MSIX/AppX package: {}",
+            file_path.display()
+        );
+
         let files = self.parser.extract_files(file_path).await?;
-        
+
         tracing::info!("Found {} files in MSIX/AppX package", files.len());
-        
+
         Ok(files)
     }
 
@@ -78,7 +83,7 @@ impl MsixAnalyzer {
         // MSIX packages use a containerized deployment model and don't directly modify
         // the system registry like traditional installers. They use a virtual registry
         // and package-specific registry hives that are managed by the Windows App Model.
-        // 
+        //
         // For static analysis, we can't extract registry operations since they're
         // handled by the Windows deployment infrastructure at runtime.
         Ok(Vec::new())
@@ -102,21 +107,24 @@ impl InstallerAnalyzer for MsixAnalyzer {
     async fn extract_metadata(&self, file_path: &Path) -> Result<InstallerMetadata> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_msix_metadata(file_path).await
     }
 
     async fn extract_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_msix_files(file_path).await
     }
 
-    async fn extract_registry_operations(&self, file_path: &Path) -> Result<Vec<RegistryOperation>> {
+    async fn extract_registry_operations(
+        &self,
+        file_path: &Path,
+    ) -> Result<Vec<RegistryOperation>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_msix_registry(file_path).await
     }
 }

@@ -1,6 +1,6 @@
 use installer_analyzer::core::error::{AnalyzerError, Result};
-use std::io;
 use std::error::Error;
+use std::io;
 
 #[cfg(test)]
 mod tests {
@@ -18,7 +18,7 @@ mod tests {
         let analyzer_error: AnalyzerError = io_error.into();
 
         match analyzer_error {
-            AnalyzerError::Io(_) => {},
+            AnalyzerError::Io(_) => {}
             _ => panic!("Expected Io variant"),
         }
     }

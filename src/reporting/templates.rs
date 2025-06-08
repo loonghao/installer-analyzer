@@ -3,12 +3,12 @@
 use crate::core::{AnalysisResult, FileEntry, RegistryOperation, RegistryValue};
 use crate::utils;
 use serde::{Deserialize, Serialize};
-use rust_embed::RustEmbed;
 use std::collections::HashMap;
 
-#[derive(RustEmbed)]
-#[folder = "templates/"]
-pub struct Templates;
+/// Get the embedded HTML template
+pub fn get_report_template() -> &'static str {
+    include_str!("../../templates/report.html")
+}
 
 /// Template data for HTML report generation
 #[derive(Serialize, Deserialize)]
@@ -118,16 +118,32 @@ impl ReportTemplateData {
     /// Create template data from analysis result
     pub fn from_analysis_result(result: &AnalysisResult) -> Self {
         let metadata = MetadataData {
-            product_name: result.metadata.product_name.clone().unwrap_or_else(|| "Unknown Package".to_string()),
-            product_version: result.metadata.product_version.clone().unwrap_or_else(|| "Unknown".to_string()),
-            manufacturer: result.metadata.manufacturer.clone().unwrap_or_else(|| "Unknown".to_string()),
+            product_name: result
+                .metadata
+                .product_name
+                .clone()
+                .unwrap_or_else(|| "Unknown Package".to_string()),
+            product_version: result
+                .metadata
+                .product_version
+                .clone()
+                .unwrap_or_else(|| "Unknown".to_string()),
+            manufacturer: result
+                .metadata
+                .manufacturer
+                .clone()
+                .unwrap_or_else(|| "Unknown".to_string()),
             format: format!("{:?}", result.metadata.format),
             file_size_formatted: utils::format_file_size(result.metadata.file_size),
             file_hash_short: result.metadata.file_hash.chars().take(16).collect(),
         };
 
         let total_file_size: u64 = result.files.iter().map(|f| f.size).sum();
-        let executable_count = result.files.iter().filter(|f| f.attributes.executable).count();
+        let executable_count = result
+            .files
+            .iter()
+            .filter(|f| f.attributes.executable)
+            .count();
 
         let summary = SummaryData {
             total_files: result.files.len(),
@@ -151,10 +167,25 @@ impl ReportTemplateData {
             file_tree_json,
             registry_operations,
             security,
-            analyzed_at: result.analyzed_at.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
-            analysis_type_class: if result.dynamic_analysis { "bg-success".to_string() } else { "bg-info".to_string() },
-            analysis_type_icon: if result.dynamic_analysis { "fa-play".to_string() } else { "fa-search".to_string() },
-            analysis_type_text: if result.dynamic_analysis { "Dynamic Analysis".to_string() } else { "Static Analysis".to_string() },
+            analyzed_at: result
+                .analyzed_at
+                .format("%Y-%m-%d %H:%M:%S UTC")
+                .to_string(),
+            analysis_type_class: if result.dynamic_analysis {
+                "bg-success".to_string()
+            } else {
+                "bg-info".to_string()
+            },
+            analysis_type_icon: if result.dynamic_analysis {
+                "fa-play".to_string()
+            } else {
+                "fa-search".to_string()
+            },
+            analysis_type_text: if result.dynamic_analysis {
+                "Dynamic Analysis".to_string()
+            } else {
+                "Static Analysis".to_string()
+            },
             analysis_duration_formatted: utils::format_duration(result.analysis_duration),
             session_id: result.session_id.to_string(),
             version: env!("CARGO_PKG_VERSION").to_string(),
@@ -172,7 +203,12 @@ impl ReportTemplateData {
         for file in files {
             let path_str = file.path.to_string_lossy();
             let file_item = FileItemData {
-                name: file.path.file_name().unwrap_or_default().to_string_lossy().to_string(),
+                name: file
+                    .path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string(),
                 size_formatted: utils::format_file_size(file.size),
             };
 
@@ -180,7 +216,10 @@ impl ReportTemplateData {
                 executables.push(file_item);
             } else if path_str.ends_with(".dll") || path_str.ends_with(".so") {
                 libraries.push(file_item);
-            } else if path_str.ends_with(".pak") || path_str.ends_with(".dat") || path_str.ends_with(".ico") {
+            } else if path_str.ends_with(".pak")
+                || path_str.ends_with(".dat")
+                || path_str.ends_with(".ico")
+            {
                 resources.push(file_item);
             } else {
                 others.push(file_item);
@@ -200,7 +239,11 @@ impl ReportTemplateData {
         const MAX_DISPLAY: usize = 20;
         let total_count = files.len();
         let has_more = total_count > MAX_DISPLAY;
-        let remaining = if has_more { total_count - MAX_DISPLAY } else { 0 };
+        let remaining = if has_more {
+            total_count - MAX_DISPLAY
+        } else {
+            0
+        };
 
         files.truncate(MAX_DISPLAY);
 
@@ -214,18 +257,23 @@ impl ReportTemplateData {
 
     /// Create registry operations data
     fn create_registry_operations(operations: &[RegistryOperation]) -> Vec<RegistryOperationData> {
-        operations.iter().take(50).map(|op| {
-            match op {
-                RegistryOperation::CreateKey { key_path, .. } => {
-                    RegistryOperationData {
-                        operation_class: "bg-success".to_string(),
-                        operation_text: "Create Key".to_string(),
-                        key_path: key_path.clone(),
-                        value_name: "-".to_string(),
-                        value_data: "-".to_string(),
-                    }
-                }
-                RegistryOperation::SetValue { key_path, value_name, value_data, .. } => {
+        operations
+            .iter()
+            .take(50)
+            .map(|op| match op {
+                RegistryOperation::CreateKey { key_path, .. } => RegistryOperationData {
+                    operation_class: "bg-success".to_string(),
+                    operation_text: "Create Key".to_string(),
+                    key_path: key_path.clone(),
+                    value_name: "-".to_string(),
+                    value_data: "-".to_string(),
+                },
+                RegistryOperation::SetValue {
+                    key_path,
+                    value_name,
+                    value_data,
+                    ..
+                } => {
                     let value_str = match value_data {
                         RegistryValue::String(s) => s.clone(),
                         RegistryValue::DWord(d) => format!("0x{:08x}", d),
@@ -240,41 +288,50 @@ impl ReportTemplateData {
                         value_data: value_str,
                     }
                 }
-                RegistryOperation::DeleteKey { key_path, .. } => {
-                    RegistryOperationData {
-                        operation_class: "bg-danger".to_string(),
-                        operation_text: "Delete Key".to_string(),
-                        key_path: key_path.clone(),
-                        value_name: "-".to_string(),
-                        value_data: "-".to_string(),
-                    }
-                }
-                RegistryOperation::DeleteValue { key_path, value_name, .. } => {
-                    RegistryOperationData {
-                        operation_class: "bg-warning".to_string(),
-                        operation_text: "Delete Value".to_string(),
-                        key_path: key_path.clone(),
-                        value_name: value_name.clone(),
-                        value_data: "-".to_string(),
-                    }
-                }
-            }
-        }).collect()
+                RegistryOperation::DeleteKey { key_path, .. } => RegistryOperationData {
+                    operation_class: "bg-danger".to_string(),
+                    operation_text: "Delete Key".to_string(),
+                    key_path: key_path.clone(),
+                    value_name: "-".to_string(),
+                    value_data: "-".to_string(),
+                },
+                RegistryOperation::DeleteValue {
+                    key_path,
+                    value_name,
+                    ..
+                } => RegistryOperationData {
+                    operation_class: "bg-warning".to_string(),
+                    operation_text: "Delete Value".to_string(),
+                    key_path: key_path.clone(),
+                    value_name: value_name.clone(),
+                    value_data: "-".to_string(),
+                },
+            })
+            .collect()
     }
 
     /// Create security analysis data
     fn create_security_data(result: &AnalysisResult) -> SecurityData {
-        let executable_count = result.files.iter().filter(|f| f.attributes.executable).count();
+        let executable_count = result
+            .files
+            .iter()
+            .filter(|f| f.attributes.executable)
+            .count();
         let total_size: u64 = result.files.iter().map(|f| f.size).sum();
-        let large_files = result.files.iter().filter(|f| f.size > 50 * 1024 * 1024).count(); // > 50MB
-        
-        let (risk_level_text, risk_level_class, risk_icon) = if executable_count > 10 || large_files > 5 {
-            ("High", "danger", "fa-exclamation-triangle")
-        } else if executable_count > 5 || large_files > 2 {
-            ("Medium", "warning", "fa-exclamation-circle")
-        } else {
-            ("Low", "success", "fa-check-circle")
-        };
+        let large_files = result
+            .files
+            .iter()
+            .filter(|f| f.size > 50 * 1024 * 1024)
+            .count(); // > 50MB
+
+        let (risk_level_text, risk_level_class, risk_icon) =
+            if executable_count > 10 || large_files > 5 {
+                ("High", "danger", "fa-exclamation-triangle")
+            } else if executable_count > 5 || large_files > 2 {
+                ("Medium", "warning", "fa-exclamation-circle")
+            } else {
+                ("Low", "success", "fa-check-circle")
+            };
 
         SecurityData {
             risk_level_class: risk_level_class.to_string(),
@@ -284,7 +341,11 @@ impl ReportTemplateData {
             large_files,
             total_size_formatted: utils::format_file_size(total_size),
             registry_operations: result.registry_operations.len(),
-            dynamic_analysis: if result.dynamic_analysis { "Yes".to_string() } else { "No".to_string() },
+            dynamic_analysis: if result.dynamic_analysis {
+                "Yes".to_string()
+            } else {
+                "No".to_string()
+            },
             file_modifications: result.file_operations.len(),
         }
     }
@@ -303,16 +364,25 @@ impl ReportTemplateData {
                 exe_size += file.size;
             } else if path_str.ends_with(".dll") || path_str.ends_with(".so") {
                 dll_size += file.size;
-            } else if path_str.ends_with(".pak") || path_str.ends_with(".dat") || path_str.ends_with(".ico") {
+            } else if path_str.ends_with(".pak")
+                || path_str.ends_with(".dat")
+                || path_str.ends_with(".ico")
+            {
                 resource_size += file.size;
-            } else if path_str.ends_with(".html") || path_str.ends_with(".txt") || path_str.ends_with(".md") {
+            } else if path_str.ends_with(".html")
+                || path_str.ends_with(".txt")
+                || path_str.ends_with(".md")
+            {
                 doc_size += file.size;
             } else {
                 other_size += file.size;
             }
         }
 
-        format!("[{}, {}, {}, {}, {}]", exe_size, dll_size, resource_size, doc_size, other_size)
+        format!(
+            "[{}, {}, {}, {}, {}]",
+            exe_size, dll_size, resource_size, doc_size, other_size
+        )
     }
 
     /// Build file tree structure from flat file list
@@ -323,14 +393,23 @@ impl ReportTemplateData {
 
         for file in files {
             let path_str = file.path.to_string_lossy();
-            let path_parts: Vec<&str> = path_str.split(['/', '\\']).filter(|s| !s.is_empty()).collect();
+            let path_parts: Vec<&str> = path_str
+                .split(['/', '\\'])
+                .filter(|s| !s.is_empty())
+                .collect();
 
             if path_parts.is_empty() {
                 continue;
             }
 
             total_files += 1;
-            Self::insert_into_tree(&mut root_nodes, &path_parts, file, 0, &mut total_directories);
+            Self::insert_into_tree(
+                &mut root_nodes,
+                &path_parts,
+                file,
+                0,
+                &mut total_directories,
+            );
         }
 
         // Convert HashMap to sorted Vec
@@ -406,7 +485,13 @@ impl ReportTemplateData {
 
         if !is_last {
             let node = nodes.get_mut(current_part).unwrap();
-            Self::insert_into_tree_vec(&mut node.children, &path_parts[1..], file, depth + 1, total_directories);
+            Self::insert_into_tree_vec(
+                &mut node.children,
+                &path_parts[1..],
+                file,
+                depth + 1,
+                total_directories,
+            );
         }
     }
 
@@ -465,20 +550,25 @@ impl ReportTemplateData {
 
         if !is_last {
             let node_index = nodes.iter().position(|n| n.name == current_part).unwrap();
-            Self::insert_into_tree_vec(&mut nodes[node_index].children, &path_parts[1..], file, depth + 1, total_directories);
+            Self::insert_into_tree_vec(
+                &mut nodes[node_index].children,
+                &path_parts[1..],
+                file,
+                depth + 1,
+                total_directories,
+            );
         }
     }
 
     /// Sort tree children recursively
     fn sort_tree_children(nodes: &mut [FileTreeNode]) {
         for node in nodes.iter_mut() {
-            node.children.sort_by(|a, b| {
-                match (a.is_directory, b.is_directory) {
+            node.children
+                .sort_by(|a, b| match (a.is_directory, b.is_directory) {
                     (true, false) => std::cmp::Ordering::Less,
                     (false, true) => std::cmp::Ordering::Greater,
                     _ => a.name.cmp(&b.name),
-                }
-            });
+                });
             Self::sort_tree_children(&mut node.children);
         }
     }
@@ -510,10 +600,16 @@ impl ReportTemplateData {
                 "dll" | "so" | "dylib" => "fas fa-book text-primary".to_string(),
                 "txt" | "md" | "readme" => "fas fa-file-alt text-secondary".to_string(),
                 "html" | "htm" | "css" | "js" => "fab fa-html5 text-warning".to_string(),
-                "png" | "jpg" | "jpeg" | "gif" | "ico" | "bmp" => "fas fa-image text-success".to_string(),
+                "png" | "jpg" | "jpeg" | "gif" | "ico" | "bmp" => {
+                    "fas fa-image text-success".to_string()
+                }
                 "zip" | "rar" | "7z" | "tar" | "gz" => "fas fa-file-archive text-info".to_string(),
-                "xml" | "json" | "yaml" | "yml" | "toml" => "fas fa-cogs text-secondary".to_string(),
-                "py" | "rs" | "cpp" | "c" | "h" | "java" | "cs" => "fas fa-code text-primary".to_string(),
+                "xml" | "json" | "yaml" | "yml" | "toml" => {
+                    "fas fa-cogs text-secondary".to_string()
+                }
+                "py" | "rs" | "cpp" | "c" | "h" | "java" | "cs" => {
+                    "fas fa-code text-primary".to_string()
+                }
                 _ => "fas fa-file text-muted".to_string(),
             }
         } else {

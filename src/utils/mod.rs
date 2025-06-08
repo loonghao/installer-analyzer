@@ -16,7 +16,7 @@ pub fn init_logging(verbose: bool) -> Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(filter))
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(filter)),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -28,9 +28,11 @@ pub fn init_logging(verbose: bool) -> Result<()> {
 pub fn is_admin() -> bool {
     #[cfg(windows)]
     {
-        use windows::Win32::System::Threading::GetCurrentProcess;
-        use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
         use windows::Win32::Foundation::{CloseHandle, HANDLE};
+        use windows::Win32::Security::{
+            GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY,
+        };
+        use windows::Win32::System::Threading::GetCurrentProcess;
         use windows::Win32::System::Threading::OpenProcessToken;
 
         unsafe {
@@ -55,7 +57,7 @@ pub fn is_admin() -> bool {
             }
         }
     }
-    
+
     false
 }
 
@@ -66,9 +68,10 @@ pub async fn validate_path(path: &Path, must_be_file: bool) -> Result<()> {
     }
 
     if must_be_file && !path.is_file() {
-        return Err(crate::core::AnalyzerError::invalid_format(
-            format!("Path is not a file: {}", path.display())
-        ));
+        return Err(crate::core::AnalyzerError::invalid_format(format!(
+            "Path is not a file: {}",
+            path.display()
+        )));
     }
 
     Ok(())

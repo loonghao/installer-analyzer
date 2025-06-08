@@ -1,10 +1,10 @@
 //! Report generator implementation using templates
 
-use crate::core::{Result, AnalysisResult, AnalyzerError};
-use crate::reporting::{Reporter, ReportFormat};
-use crate::reporting::templates::{Templates, ReportTemplateData};
-use std::path::Path;
+use crate::core::{AnalysisResult, AnalyzerError, Result};
+use crate::reporting::templates::{ReportTemplateData, get_report_template};
+use crate::reporting::{ReportFormat, Reporter};
 use handlebars::Handlebars;
+use std::path::Path;
 
 /// Main report generator
 pub struct ReportGenerator {
@@ -14,17 +14,13 @@ pub struct ReportGenerator {
 impl ReportGenerator {
     pub fn new() -> Self {
         let mut handlebars = Handlebars::new();
-        
+
         // Load embedded template
-        if let Some(template_file) = Templates::get("report.html") {
-            let template_str = std::str::from_utf8(&template_file.data)
-                .expect("Template file should be valid UTF-8");
-            handlebars.register_template_string("report", template_str)
-                .expect("Template should be valid");
-        } else {
-            panic!("Template file not found in embedded resources");
-        }
-        
+        let template_str = get_report_template();
+        handlebars
+            .register_template_string("report", template_str)
+            .expect("Template should be valid");
+
         Self { handlebars }
     }
 
@@ -68,16 +64,16 @@ impl ReportGenerator {
             "analyzed_at": result.analyzed_at,
             "version": env!("CARGO_PKG_VERSION")
         });
-        
-        serde_json::to_string_pretty(&ci_report)
-            .map_err(|e| AnalyzerError::SerializationError(e))
+
+        serde_json::to_string_pretty(&ci_report).map_err(|e| AnalyzerError::SerializationError(e))
     }
 
     /// Generate modern HTML report using templates
     async fn generate_html_report(&self, result: &AnalysisResult) -> Result<String> {
         let template_data = ReportTemplateData::from_analysis_result(result);
-        
-        self.handlebars.render("report", &template_data)
+
+        self.handlebars
+            .render("report", &template_data)
             .map_err(|e| AnalyzerError::generic(format!("Template rendering failed: {}", e)))
     }
 
@@ -138,7 +134,11 @@ impl ReportGenerator {
             if result.dynamic_analysis { "Yes" } else { "No" },
             result.metadata.format,
             result.metadata.product_name.as_deref().unwrap_or("Unknown"),
-            result.metadata.product_version.as_deref().unwrap_or("Unknown"),
+            result
+                .metadata
+                .product_version
+                .as_deref()
+                .unwrap_or("Unknown"),
             result.metadata.manufacturer.as_deref().unwrap_or("Unknown"),
             crate::utils::format_file_size(result.metadata.file_size),
             &result.metadata.file_hash[..16],
@@ -148,23 +148,39 @@ impl ReportGenerator {
             result.process_operations.len(),
             result.network_operations.len(),
             self.calculate_risk_level(result),
-            result.files.iter().filter(|f| f.attributes.executable).count(),
-            result.files.iter().filter(|f| f.size > 50 * 1024 * 1024).count(),
+            result
+                .files
+                .iter()
+                .filter(|f| f.attributes.executable)
+                .count(),
+            result
+                .files
+                .iter()
+                .filter(|f| f.size > 50 * 1024 * 1024)
+                .count(),
             self.generate_top_files_markdown(&result.files),
             self.generate_executable_files_markdown(&result.files),
             self.generate_registry_operations_markdown(&result.registry_operations),
             env!("CARGO_PKG_VERSION"),
             result.analyzed_at.format("%Y-%m-%d %H:%M:%S UTC")
         );
-        
+
         Ok(markdown)
     }
 
     /// Calculate risk level for CI/CD
     fn calculate_risk_level(&self, result: &AnalysisResult) -> String {
-        let executable_count = result.files.iter().filter(|f| f.attributes.executable).count();
-        let large_files = result.files.iter().filter(|f| f.size > 50 * 1024 * 1024).count();
-        
+        let executable_count = result
+            .files
+            .iter()
+            .filter(|f| f.attributes.executable)
+            .count();
+        let large_files = result
+            .files
+            .iter()
+            .filter(|f| f.size > 50 * 1024 * 1024)
+            .count();
+
         if executable_count > 10 || large_files > 5 {
             "high".to_string()
         } else if executable_count > 5 || large_files > 2 {
@@ -178,7 +194,7 @@ impl ReportGenerator {
     fn generate_top_files_markdown(&self, files: &[crate::core::FileEntry]) -> String {
         let mut sorted_files: Vec<_> = files.iter().collect();
         sorted_files.sort_by(|a, b| b.size.cmp(&a.size));
-        
+
         let mut markdown = String::new();
         for (i, file) in sorted_files.iter().take(10).enumerate() {
             markdown.push_str(&format!(
@@ -188,20 +204,18 @@ impl ReportGenerator {
                 crate::utils::format_file_size(file.size)
             ));
         }
-        
+
         if markdown.is_empty() {
             markdown.push_str("No files found.\n");
         }
-        
+
         markdown
     }
 
     /// Generate executable files section for markdown
     fn generate_executable_files_markdown(&self, files: &[crate::core::FileEntry]) -> String {
-        let executable_files: Vec<_> = files.iter()
-            .filter(|f| f.attributes.executable)
-            .collect();
-        
+        let executable_files: Vec<_> = files.iter().filter(|f| f.attributes.executable).collect();
+
         let mut markdown = String::new();
         for file in executable_files.iter().take(20) {
             markdown.push_str(&format!(
@@ -210,45 +224,70 @@ impl ReportGenerator {
                 crate::utils::format_file_size(file.size)
             ));
         }
-        
+
         if markdown.is_empty() {
             markdown.push_str("No executable files found.\n");
         }
-        
+
         markdown
     }
 
     /// Generate registry operations section for markdown
-    fn generate_registry_operations_markdown(&self, operations: &[crate::core::RegistryOperation]) -> String {
+    fn generate_registry_operations_markdown(
+        &self,
+        operations: &[crate::core::RegistryOperation],
+    ) -> String {
         let mut markdown = String::new();
-        
+
         for (i, op) in operations.iter().take(20).enumerate() {
             match op {
                 crate::core::RegistryOperation::CreateKey { key_path, .. } => {
                     markdown.push_str(&format!("{}. **Create Key:** `{}`\n", i + 1, key_path));
                 }
-                crate::core::RegistryOperation::SetValue { key_path, value_name, .. } => {
-                    markdown.push_str(&format!("{}. **Set Value:** `{}\\{}`\n", i + 1, key_path, value_name));
+                crate::core::RegistryOperation::SetValue {
+                    key_path,
+                    value_name,
+                    ..
+                } => {
+                    markdown.push_str(&format!(
+                        "{}. **Set Value:** `{}\\{}`\n",
+                        i + 1,
+                        key_path,
+                        value_name
+                    ));
                 }
                 crate::core::RegistryOperation::DeleteKey { key_path, .. } => {
                     markdown.push_str(&format!("{}. **Delete Key:** `{}`\n", i + 1, key_path));
                 }
-                crate::core::RegistryOperation::DeleteValue { key_path, value_name, .. } => {
-                    markdown.push_str(&format!("{}. **Delete Value:** `{}\\{}`\n", i + 1, key_path, value_name));
+                crate::core::RegistryOperation::DeleteValue {
+                    key_path,
+                    value_name,
+                    ..
+                } => {
+                    markdown.push_str(&format!(
+                        "{}. **Delete Value:** `{}\\{}`\n",
+                        i + 1,
+                        key_path,
+                        value_name
+                    ));
                 }
             }
         }
-        
+
         if markdown.is_empty() {
             markdown.push_str("No registry operations found.\n");
         }
-        
+
         markdown
     }
 }
 
 impl Reporter for ReportGenerator {
-    async fn generate_report(&self, result: &AnalysisResult, format: ReportFormat) -> Result<String> {
+    async fn generate_report(
+        &self,
+        result: &AnalysisResult,
+        format: ReportFormat,
+    ) -> Result<String> {
         match format {
             ReportFormat::Json => self.generate_json_report(result).await,
             ReportFormat::Html => self.generate_html_report(result).await,
@@ -256,7 +295,12 @@ impl Reporter for ReportGenerator {
         }
     }
 
-    async fn save_report(&self, result: &AnalysisResult, format: ReportFormat, output_path: &Path) -> Result<()> {
+    async fn save_report(
+        &self,
+        result: &AnalysisResult,
+        format: ReportFormat,
+        output_path: &Path,
+    ) -> Result<()> {
         let content = self.generate_report(result, format).await?;
         tokio::fs::write(output_path, content).await?;
         tracing::info!("Report saved to: {}", output_path.display());

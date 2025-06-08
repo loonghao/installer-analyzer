@@ -1,6 +1,6 @@
 //! Sandbox controller implementation
 
-use crate::core::{Result, SandboxConfig, AnalysisResult, AnalyzerError};
+use crate::core::{AnalysisResult, AnalyzerError, Result, SandboxConfig};
 use crate::sandbox::Sandbox;
 use std::path::Path;
 
@@ -27,10 +27,13 @@ impl Sandbox for SandboxController {
     async fn analyze_installer(&mut self, installer_path: &Path) -> Result<AnalysisResult> {
         // TODO: Implement sandbox analysis
         // This is a placeholder implementation
-        tracing::warn!("Sandbox analysis not yet implemented for: {}", installer_path.display());
-        
+        tracing::warn!(
+            "Sandbox analysis not yet implemented for: {}",
+            installer_path.display()
+        );
+
         Err(AnalyzerError::sandbox_error(
-            "Sandbox functionality not yet implemented"
+            "Sandbox functionality not yet implemented",
         ))
     }
 

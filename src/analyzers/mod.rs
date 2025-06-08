@@ -1,44 +1,36 @@
 //! Static analyzer implementations for various installer formats
 
-use crate::core::{Result, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
+use crate::core::{FileEntry, InstallerFormat, InstallerMetadata, RegistryOperation, Result};
 use async_trait::async_trait;
 use std::path::Path;
 
-pub mod msi;
-pub mod nsis;
-pub mod inno;
 pub mod archive;
-pub mod wheel;
-pub mod msix;
-pub mod installshield;
-pub mod wix;
-pub mod squirrel;
 pub mod common;
+pub mod inno;
+pub mod installshield;
+pub mod msi;
+pub mod msix;
+pub mod nsis;
+pub mod squirrel;
+pub mod wheel;
+pub mod wix;
 
 // Re-export analyzers
-pub use msi::MsiAnalyzer;
-pub use nsis::NsisAnalyzer;
-pub use inno::InnoAnalyzer;
 pub use archive::ArchiveAnalyzer;
-pub use wheel::WheelAnalyzer;
-pub use msix::MsixAnalyzer;
+pub use inno::InnoAnalyzer;
 pub use installshield::InstallShieldAnalyzer;
-pub use wix::WixAnalyzer;
+pub use msi::MsiAnalyzer;
+pub use msix::MsixAnalyzer;
+pub use nsis::NsisAnalyzer;
 pub use squirrel::SquirrelAnalyzer;
+pub use wheel::WheelAnalyzer;
+pub use wix::WixAnalyzer;
 
 // Re-export common utilities
 pub use common::{
-    is_pe_file,
-    search_file_content,
-    detect_installer_format,
-    read_file_content_range,
-    calculate_file_hash,
-    get_file_size,
-    validate_file,
-    detect_format_by_extension,
-    read_file_header,
-    is_archive_file,
-    detect_archive_format,
+    calculate_file_hash, detect_archive_format, detect_format_by_extension,
+    detect_installer_format, get_file_size, is_archive_file, is_pe_file, read_file_content_range,
+    read_file_header, search_file_content, validate_file,
 };
 
 /// Main trait for installer analyzers
@@ -57,14 +49,18 @@ pub trait InstallerAnalyzer: Send + Sync {
     async fn extract_files(&self, file_path: &Path) -> Result<Vec<FileEntry>>;
 
     /// Extract registry operations from install scripts
-    async fn extract_registry_operations(&self, file_path: &Path) -> Result<Vec<RegistryOperation>>;
+    async fn extract_registry_operations(&self, file_path: &Path)
+        -> Result<Vec<RegistryOperation>>;
 
     /// Perform complete analysis
-    async fn analyze(&self, file_path: &Path) -> Result<(InstallerMetadata, Vec<FileEntry>, Vec<RegistryOperation>)> {
+    async fn analyze(
+        &self,
+        file_path: &Path,
+    ) -> Result<(InstallerMetadata, Vec<FileEntry>, Vec<RegistryOperation>)> {
         let metadata = self.extract_metadata(file_path).await?;
         let files = self.extract_files(file_path).await?;
         let registry_ops = self.extract_registry_operations(file_path).await?;
-        
+
         Ok((metadata, files, registry_ops))
     }
 }
@@ -94,7 +90,10 @@ impl AnalyzerFactory {
         // Try Python Wheel analyzer (specific file extension)
         let wheel_analyzer = WheelAnalyzer::new();
         if wheel_analyzer.can_analyze(file_path).await? {
-            tracing::info!("Selected Python Wheel analyzer for: {}", file_path.display());
+            tracing::info!(
+                "Selected Python Wheel analyzer for: {}",
+                file_path.display()
+            );
             return Ok(Box::new(wheel_analyzer));
         }
 
@@ -108,7 +107,10 @@ impl AnalyzerFactory {
         // Try InstallShield analyzer (PE-based detection)
         let installshield_analyzer = InstallShieldAnalyzer::new();
         if installshield_analyzer.can_analyze(file_path).await? {
-            tracing::info!("Selected InstallShield analyzer for: {}", file_path.display());
+            tracing::info!(
+                "Selected InstallShield analyzer for: {}",
+                file_path.display()
+            );
             return Ok(Box::new(installshield_analyzer));
         }
 
@@ -134,9 +136,10 @@ impl AnalyzerFactory {
         }
 
         tracing::warn!("No suitable analyzer found for: {}", file_path.display());
-        Err(crate::core::AnalyzerError::unsupported_format(
-            format!("No analyzer found for file: {}", file_path.display())
-        ))
+        Err(crate::core::AnalyzerError::unsupported_format(format!(
+            "No analyzer found for file: {}",
+            file_path.display()
+        )))
     }
 
     /// Get all available analyzers

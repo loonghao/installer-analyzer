@@ -60,8 +60,5 @@ hex = "0.4"
 # Template engine
 handlebars = "4.0"
 
-# Embed files at compile time
-rust-embed = "8.0"
-
 [dev-dependencies]
 tempfile = "3.0"

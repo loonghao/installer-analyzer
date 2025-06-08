@@ -5,4 +5,4 @@ pub mod parser;
 
 // Re-export main components
 pub use analyzer::WheelAnalyzer;
-pub use parser::{WheelParser, WheelMetadata, WheelDependency};
+pub use parser::{WheelDependency, WheelMetadata, WheelParser};

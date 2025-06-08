@@ -1,17 +1,16 @@
 //! MSI database access using Windows Installer API
 
-use crate::core::{Result, AnalyzerError};
-use std::path::Path;
+use crate::core::{AnalyzerError, Result};
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
+use std::os::windows::ffi::OsStringExt;
+use std::path::Path;
 use windows::core::{PCWSTR, PWSTR};
 use windows::Win32::Foundation::ERROR_SUCCESS;
 use windows::Win32::System::ApplicationInstallationAndServicing::{
-    MsiOpenDatabaseW, MsiCloseHandle, MsiDatabaseOpenViewW, MsiViewExecute,
-    MsiViewFetch, MsiRecordGetStringW, MsiRecordGetInteger, MsiViewClose,
-    MSIDBOPEN_READONLY, MSIHANDLE
+    MsiCloseHandle, MsiDatabaseOpenViewW, MsiOpenDatabaseW, MsiRecordGetInteger,
+    MsiRecordGetStringW, MsiViewClose, MsiViewExecute, MsiViewFetch, MSIDBOPEN_READONLY, MSIHANDLE,
 };
-use std::os::windows::ffi::OsStringExt;
 
 /// MSI Database wrapper
 pub struct MsiDatabase {
@@ -27,7 +26,7 @@ impl MsiDatabase {
             .collect();
 
         let mut handle = MSIHANDLE(0);
-        
+
         unsafe {
             let result = MsiOpenDatabaseW(
                 PCWSTR(path_wide.as_ptr()),
@@ -36,9 +35,10 @@ impl MsiDatabase {
             );
 
             if result != ERROR_SUCCESS.0 {
-                return Err(AnalyzerError::windows_api_error(
-                    format!("Failed to open MSI database: error code {}", result)
-                ));
+                return Err(AnalyzerError::windows_api_error(format!(
+                    "Failed to open MSI database: error code {}",
+                    result
+                )));
             }
         }
 
@@ -55,28 +55,29 @@ impl MsiDatabase {
         let mut view_handle = MSIHANDLE(0);
 
         unsafe {
-            let result = MsiDatabaseOpenViewW(
-                self.handle,
-                PCWSTR(query_wide.as_ptr()),
-                &mut view_handle,
-            );
+            let result =
+                MsiDatabaseOpenViewW(self.handle, PCWSTR(query_wide.as_ptr()), &mut view_handle);
 
             if result != ERROR_SUCCESS.0 {
-                return Err(AnalyzerError::windows_api_error(
-                    format!("Failed to open database view: error code {}", result)
-                ));
+                return Err(AnalyzerError::windows_api_error(format!(
+                    "Failed to open database view: error code {}",
+                    result
+                )));
             }
 
             let execute_result = MsiViewExecute(view_handle, MSIHANDLE(0));
             if execute_result != ERROR_SUCCESS.0 {
                 MsiCloseHandle(view_handle);
-                return Err(AnalyzerError::windows_api_error(
-                    format!("Failed to execute view: error code {}", execute_result)
-                ));
+                return Err(AnalyzerError::windows_api_error(format!(
+                    "Failed to execute view: error code {}",
+                    execute_result
+                )));
             }
         }
 
-        Ok(MsiView { handle: view_handle })
+        Ok(MsiView {
+            handle: view_handle,
+        })
     }
 
     /// Get the handle for direct API calls
@@ -107,13 +108,16 @@ impl MsiView {
 
         unsafe {
             let result = MsiViewFetch(self.handle, &mut record_handle);
-            
+
             match result {
                 259 => Ok(None), // ERROR_NO_MORE_ITEMS
-                0 => Ok(Some(MsiRecord { handle: record_handle })), // ERROR_SUCCESS
-                _ => Err(AnalyzerError::windows_api_error(
-                    format!("Failed to fetch record: error code {}", result)
-                )),
+                0 => Ok(Some(MsiRecord {
+                    handle: record_handle,
+                })), // ERROR_SUCCESS
+                _ => Err(AnalyzerError::windows_api_error(format!(
+                    "Failed to fetch record: error code {}",
+                    result
+                ))),
             }
         }
     }
@@ -121,11 +125,11 @@ impl MsiView {
     /// Collect all records from the view
     pub fn collect_records(&self) -> Result<Vec<MsiRecord>> {
         let mut records = Vec::new();
-        
+
         while let Some(record) = self.fetch()? {
             records.push(record);
         }
-        
+
         Ok(records)
     }
 }
@@ -153,12 +157,7 @@ impl MsiRecord {
 
         // First call to get the required buffer size
         unsafe {
-            MsiRecordGetStringW(
-                self.handle,
-                field,
-                PWSTR::null(),
-                Some(&mut buffer_size),
-            );
+            MsiRecordGetStringW(self.handle, field, PWSTR::null(), Some(&mut buffer_size));
         }
 
         if buffer_size == 0 {
@@ -178,19 +177,20 @@ impl MsiRecord {
             );
 
             if result != ERROR_SUCCESS.0 {
-                return Err(AnalyzerError::windows_api_error(
-                    format!("Failed to get string from record: error code {}", result)
-                ));
+                return Err(AnalyzerError::windows_api_error(format!(
+                    "Failed to get string from record: error code {}",
+                    result
+                )));
             }
         }
 
         // Convert to Rust string
         let end = buffer.iter().position(|&c| c == 0).unwrap_or(buffer.len());
         let os_string = std::ffi::OsString::from_wide(&buffer[..end]);
-        
-        os_string.into_string().map_err(|_| {
-            AnalyzerError::parse_error("Invalid UTF-8 in MSI string field")
-        })
+
+        os_string
+            .into_string()
+            .map_err(|_| AnalyzerError::parse_error("Invalid UTF-8 in MSI string field"))
     }
 
     /// Get integer value from a field

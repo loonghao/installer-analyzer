@@ -1,9 +1,11 @@
 //! NSIS data structure parser
 
-use crate::core::{Result, FileEntry, FileAttributes, RegistryOperation, RegistryValue, RegistryValueType};
-use std::path::{Path, PathBuf};
-use std::collections::HashMap;
+use crate::core::{
+    FileAttributes, FileEntry, RegistryOperation, RegistryValue, RegistryValueType, Result,
+};
 use chrono::Utc;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 /// NSIS header structure (simplified)
 #[derive(Debug)]
@@ -66,11 +68,7 @@ impl NsisParser {
     /// Find NSIS signature in data
     fn find_nsis_signature(&self, data: &[u8]) -> Option<usize> {
         // Look for NSIS-specific patterns
-        let patterns: &[&[u8]] = &[
-            b"Nullsoft.NSIS.exehead",
-            b"NullsoftInst",
-            b"NSIS Error",
-        ];
+        let patterns: &[&[u8]] = &[b"Nullsoft.NSIS.exehead", b"NullsoftInst", b"NSIS Error"];
 
         for pattern in patterns {
             if let Some(pos) = self.find_pattern(data, pattern) {
@@ -90,9 +88,9 @@ impl NsisParser {
     pub fn extract_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         // For now, we'll extract basic information from the PE resources
         // In a real implementation, we would parse the NSIS data structures
-        
+
         let mut files = Vec::new();
-        
+
         // Try to extract some basic file information
         // This is a simplified approach - real NSIS parsing would be much more complex
         if let Ok(file_info) = self.extract_basic_file_info(file_path) {
@@ -102,7 +100,8 @@ impl NsisParser {
         // Add the installer itself as a file entry
         if let Ok(metadata) = std::fs::metadata(file_path) {
             files.push(FileEntry {
-                path: file_path.file_name()
+                path: file_path
+                    .file_name()
                     .unwrap_or_default()
                     .to_string_lossy()
                     .to_string()
@@ -128,9 +127,9 @@ impl NsisParser {
         // This is a placeholder implementation
         // Real NSIS file extraction would require parsing the NSIS data structures
         // which is quite complex and would need the NSIS decompression algorithms
-        
+
         let mut files = Vec::new();
-        
+
         // Add some common NSIS-installed files as examples
         let common_files = [
             ("uninstall.exe", 1024 * 100, true),
@@ -161,7 +160,7 @@ impl NsisParser {
     pub fn extract_registry_operations(&self, _file_path: &Path) -> Result<Vec<RegistryOperation>> {
         // This is a placeholder implementation
         // Real NSIS registry extraction would require parsing the NSIS script
-        
+
         let mut operations = Vec::new();
         let now = Utc::now();
 
@@ -180,7 +179,9 @@ impl NsisParser {
         });
 
         operations.push(RegistryOperation::SetValue {
-            key_path: "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MyApp".to_string(),
+            key_path:
+                "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MyApp"
+                    .to_string(),
             value_name: "DisplayName".to_string(),
             value_type: RegistryValueType::String,
             value_data: RegistryValue::String("My Application".to_string()),
@@ -209,7 +210,7 @@ impl NsisParser {
     /// Extract version information from PE resources (placeholder)
     fn extract_version_info(&self, _file_path: &Path) -> Result<HashMap<String, String>> {
         let mut info = HashMap::new();
-        
+
         // This would normally parse PE version resources
         // For now, we'll return some placeholder data
         info.insert("FileDescription".to_string(), "NSIS Installer".to_string());

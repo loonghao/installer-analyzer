@@ -1,11 +1,11 @@
 //! Archive analyzer implementation
 
-use crate::core::{Result, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
-use crate::analyzers::{InstallerAnalyzer, common};
-use super::parser::{ArchiveParser, ArchiveFormat};
+use super::parser::{ArchiveFormat, ArchiveParser};
+use crate::analyzers::{common, InstallerAnalyzer};
+use crate::core::{FileEntry, InstallerFormat, InstallerMetadata, RegistryOperation, Result};
 use async_trait::async_trait;
-use std::path::Path;
 use chrono::Utc;
+use std::path::Path;
 
 /// Archive installer analyzer
 pub struct ArchiveAnalyzer {
@@ -34,7 +34,8 @@ impl ArchiveAnalyzer {
         let parser_metadata = self.parser.extract_metadata(file_path).await?;
 
         // Build metadata structure
-        let product_name = file_path.file_stem()
+        let product_name = file_path
+            .file_stem()
             .and_then(|s| s.to_str())
             .map(|s| s.to_string());
 
@@ -50,7 +51,10 @@ impl ArchiveAnalyzer {
         // Combine all properties
         let mut properties = parser_metadata;
         properties.insert("analyzer_type".to_string(), "Archive".to_string());
-        properties.insert("analyzer_version".to_string(), env!("CARGO_PKG_VERSION").to_string());
+        properties.insert(
+            "analyzer_version".to_string(),
+            env!("CARGO_PKG_VERSION").to_string(),
+        );
 
         Ok(InstallerMetadata {
             format,
@@ -67,11 +71,11 @@ impl ArchiveAnalyzer {
     /// Extract files from archive
     async fn extract_archive_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         tracing::info!("Extracting files from archive: {}", file_path.display());
-        
+
         let files = self.parser.extract_files(file_path).await?;
-        
+
         tracing::info!("Found {} files in archive", files.len());
-        
+
         Ok(files)
     }
 
@@ -101,21 +105,24 @@ impl InstallerAnalyzer for ArchiveAnalyzer {
     async fn extract_metadata(&self, file_path: &Path) -> Result<InstallerMetadata> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_archive_metadata(file_path).await
     }
 
     async fn extract_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_archive_files(file_path).await
     }
 
-    async fn extract_registry_operations(&self, file_path: &Path) -> Result<Vec<RegistryOperation>> {
+    async fn extract_registry_operations(
+        &self,
+        file_path: &Path,
+    ) -> Result<Vec<RegistryOperation>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_archive_registry(file_path).await
     }
 }

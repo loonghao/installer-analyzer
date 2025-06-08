@@ -1,10 +1,10 @@
 //! Python Wheel data structure parser
 
-use crate::core::{Result, AnalyzerError, FileEntry};
-use crate::analyzers::archive::{ArchiveParser, ArchiveFormat};
-use std::path::Path;
+use crate::analyzers::archive::{ArchiveFormat, ArchiveParser};
+use crate::core::{AnalyzerError, FileEntry, Result};
 use std::collections::HashMap;
 use std::io::Read;
+use std::path::Path;
 use zip::ZipArchive;
 
 /// Python Wheel dependency information
@@ -74,14 +74,16 @@ impl WheelParser {
 
         // Look for METADATA file in .dist-info directory
         for i in 0..archive.len() {
-            let mut zip_file = archive.by_index(i)
-                .map_err(|e| AnalyzerError::generic(format!("Failed to read zip entry {}: {}", i, e)))?;
+            let mut zip_file = archive.by_index(i).map_err(|e| {
+                AnalyzerError::generic(format!("Failed to read zip entry {}: {}", i, e))
+            })?;
 
             let file_name = zip_file.name();
             if file_name.ends_with(".dist-info/METADATA") {
                 let mut content = String::new();
-                zip_file.read_to_string(&mut content)
-                    .map_err(|e| AnalyzerError::generic(format!("Failed to read METADATA file: {}", e)))?;
+                zip_file.read_to_string(&mut content).map_err(|e| {
+                    AnalyzerError::generic(format!("Failed to read METADATA file: {}", e))
+                })?;
                 return Ok(content);
             }
         }
@@ -115,7 +117,7 @@ impl WheelParser {
 
         for line in content.lines() {
             let line = line.trim();
-            
+
             // Handle description section (after empty line)
             if in_description {
                 description_lines.push(line.to_string());
@@ -170,17 +172,21 @@ impl WheelParser {
     fn parse_dependency(&self, spec: &str) -> Result<WheelDependency> {
         // Simple dependency parsing - real implementation would be more complex
         let spec = spec.trim();
-        
+
         // Split on semicolon for environment markers
         let (dep_part, env_marker) = if let Some(pos) = spec.find(';') {
-            (spec[..pos].trim(), Some(spec[pos+1..].trim().to_string()))
+            (spec[..pos].trim(), Some(spec[pos + 1..].trim().to_string()))
         } else {
             (spec, None)
         };
 
         // Extract package name and version spec
-        let (name, version_spec) = if let Some(pos) = dep_part.find(|c: char| ">=<=!~".contains(c)) {
-            (dep_part[..pos].trim().to_string(), Some(dep_part[pos..].trim().to_string()))
+        let (name, version_spec) = if let Some(pos) = dep_part.find(|c: char| ">=<=!~".contains(c))
+        {
+            (
+                dep_part[..pos].trim().to_string(),
+                Some(dep_part[pos..].trim().to_string()),
+            )
         } else {
             (dep_part.to_string(), None)
         };
@@ -205,7 +211,10 @@ impl WheelParser {
     }
 
     /// Extract wheel-specific metadata as HashMap
-    pub async fn extract_wheel_properties(&self, file_path: &Path) -> Result<HashMap<String, String>> {
+    pub async fn extract_wheel_properties(
+        &self,
+        file_path: &Path,
+    ) -> Result<HashMap<String, String>> {
         let mut properties = HashMap::new();
 
         // Get basic archive properties
@@ -217,25 +226,31 @@ impl WheelParser {
             Ok(metadata) => {
                 properties.insert("wheel_name".to_string(), metadata.name);
                 properties.insert("wheel_version".to_string(), metadata.version);
-                
+
                 if let Some(summary) = metadata.summary {
                     properties.insert("wheel_summary".to_string(), summary);
                 }
-                
+
                 if let Some(author) = metadata.author {
                     properties.insert("wheel_author".to_string(), author);
                 }
-                
+
                 if let Some(license) = metadata.license {
                     properties.insert("wheel_license".to_string(), license);
                 }
-                
+
                 if let Some(requires_python) = metadata.requires_python {
                     properties.insert("wheel_requires_python".to_string(), requires_python);
                 }
-                
-                properties.insert("wheel_dependencies_count".to_string(), metadata.requires_dist.len().to_string());
-                properties.insert("wheel_classifiers_count".to_string(), metadata.classifier.len().to_string());
+
+                properties.insert(
+                    "wheel_dependencies_count".to_string(),
+                    metadata.requires_dist.len().to_string(),
+                );
+                properties.insert(
+                    "wheel_classifiers_count".to_string(),
+                    metadata.classifier.len().to_string(),
+                );
             }
             Err(e) => {
                 tracing::warn!("Failed to extract wheel metadata: {}", e);
@@ -244,7 +259,7 @@ impl WheelParser {
         }
 
         properties.insert("package_type".to_string(), "Python Wheel".to_string());
-        
+
         Ok(properties)
     }
 }

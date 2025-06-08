@@ -1,32 +1,38 @@
+use installer_analyzer::analyzers::{InstallerAnalyzer, NsisAnalyzer};
 use std::path::Path;
-use installer_analyzer::analyzers::{NsisAnalyzer, InstallerAnalyzer};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logging
     tracing_subscriber::fmt::init();
-    
+
     println!("Testing NSIS analyzer...\n");
-    
+
     let analyzer = NsisAnalyzer::new();
-    
+
     // Test files
     let test_files = [
-        ("tests/data/Gitify.Setup.6.3.0.exe", true),  // Should be NSIS
-        ("tests/data/pycharm-2025.1.1.1.exe", true),  // Should be NSIS
+        ("tests/data/Gitify.Setup.6.3.0.exe", true), // Should be NSIS
+        ("tests/data/pycharm-2025.1.1.1.exe", true), // Should be NSIS
         ("tests/data/VSCodeSetup-x64-1.100.0.exe", false), // Should be InnoSetup
-        ("tests/data/ArtFlow-1.5.6.msi", false),      // Should not be NSIS
+        ("tests/data/ArtFlow-1.5.6.msi", false),     // Should not be NSIS
     ];
-    
+
     println!("=== NSIS Detection Test ===");
     for (file_path, expected_nsis) in &test_files {
         let path = Path::new(file_path);
         if path.exists() {
             match analyzer.can_analyze(path).await {
                 Ok(can_analyze) => {
-                    let status = if can_analyze == *expected_nsis { "✓" } else { "✗" };
-                    println!("  {} {}: NSIS = {} (expected {})", 
-                        status, file_path, can_analyze, expected_nsis);
+                    let status = if can_analyze == *expected_nsis {
+                        "✓"
+                    } else {
+                        "✗"
+                    };
+                    println!(
+                        "  {} {}: NSIS = {} (expected {})",
+                        status, file_path, can_analyze, expected_nsis
+                    );
                 }
                 Err(e) => {
                     println!("  ✗ {}: Error = {}", file_path, e);
@@ -36,14 +42,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("  - {}: File not found", file_path);
         }
     }
-    
+
     // Test metadata extraction for NSIS files
     println!("\n=== NSIS Metadata Extraction Test ===");
     let nsis_files = [
         "tests/data/Gitify.Setup.6.3.0.exe",
         "tests/data/pycharm-2025.1.1.1.exe",
     ];
-    
+
     for file_path in &nsis_files {
         let path = Path::new(file_path);
         if path.exists() {
@@ -71,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("  - {}: File not found", file_path);
         }
     }
-    
+
     // Test file extraction
     println!("\n=== NSIS File Extraction Test ===");
     for file_path in &nsis_files {
@@ -84,9 +90,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         Ok(files) => {
                             println!("    ✓ Found {} files", files.len());
                             for (i, file) in files.iter().take(5).enumerate() {
-                                println!("      {}. {} ({} bytes)", 
-                                    i + 1, 
-                                    file.path.display(), 
+                                println!(
+                                    "      {}. {} ({} bytes)",
+                                    i + 1,
+                                    file.path.display(),
                                     file.size
                                 );
                             }
@@ -102,7 +109,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     // Test registry extraction
     println!("\n=== NSIS Registry Extraction Test ===");
     for file_path in &nsis_files {
@@ -116,11 +123,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             println!("    ✓ Found {} registry operations", operations.len());
                             for (i, op) in operations.iter().take(3).enumerate() {
                                 match op {
-                                    installer_analyzer::core::RegistryOperation::CreateKey { key_path, .. } => {
+                                    installer_analyzer::core::RegistryOperation::CreateKey {
+                                        key_path,
+                                        ..
+                                    } => {
                                         println!("      {}. Create Key: {}", i + 1, key_path);
                                     }
-                                    installer_analyzer::core::RegistryOperation::SetValue { key_path, value_name, .. } => {
-                                        println!("      {}. Set Value: {}\\{}", i + 1, key_path, value_name);
+                                    installer_analyzer::core::RegistryOperation::SetValue {
+                                        key_path,
+                                        value_name,
+                                        ..
+                                    } => {
+                                        println!(
+                                            "      {}. Set Value: {}\\{}",
+                                            i + 1,
+                                            key_path,
+                                            value_name
+                                        );
                                     }
                                     _ => {
                                         println!("      {}. Other operation", i + 1);
@@ -139,7 +158,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     println!("\nNSIS analyzer test completed!");
     Ok(())
 }

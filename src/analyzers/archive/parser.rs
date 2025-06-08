@@ -1,8 +1,8 @@
 //! Archive data structure parser
 
-use crate::core::{Result, AnalyzerError, FileEntry, FileAttributes};
-use std::path::{Path, PathBuf};
+use crate::core::{AnalyzerError, FileAttributes, FileEntry, Result};
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use zip::ZipArchive;
 
 /// Supported archive formats
@@ -38,22 +38,26 @@ impl ArchiveParser {
     /// Detect archive format from file header
     pub async fn detect_format(file_path: &Path) -> Result<ArchiveFormat> {
         let header = crate::analyzers::common::read_file_header(file_path, 8).await?;
-        
+
         if header.len() >= 4 {
             // ZIP signature: PK (0x504B)
             if header[0] == 0x50 && header[1] == 0x4B {
                 return Ok(ArchiveFormat::Zip);
             }
-            
+
             // 7z signature: 7z¼¯' (0x377ABCAF271C)
-            if header.len() >= 6 
-                && header[0] == 0x37 && header[1] == 0x7A 
-                && header[2] == 0xBC && header[3] == 0xAF 
-                && header[4] == 0x27 && header[5] == 0x1C {
+            if header.len() >= 6
+                && header[0] == 0x37
+                && header[1] == 0x7A
+                && header[2] == 0xBC
+                && header[3] == 0xAF
+                && header[4] == 0x27
+                && header[5] == 0x1C
+            {
                 return Ok(ArchiveFormat::SevenZ);
             }
         }
-        
+
         Ok(ArchiveFormat::Unknown)
     }
 
@@ -72,8 +76,9 @@ impl ArchiveParser {
         let mut entries = Vec::new();
 
         for i in 0..archive.len() {
-            let zip_file = archive.by_index(i)
-                .map_err(|e| AnalyzerError::generic(format!("Failed to read ZIP entry {}: {}", i, e)))?;
+            let zip_file = archive.by_index(i).map_err(|e| {
+                AnalyzerError::generic(format!("Failed to read ZIP entry {}: {}", i, e))
+            })?;
 
             let entry = ArchiveEntry {
                 name: zip_file.name().to_string(),
@@ -97,7 +102,8 @@ impl ArchiveParser {
 
         // Return a basic entry representing the 7z file itself
         let entries = vec![ArchiveEntry {
-            name: file_path.file_name()
+            name: file_path
+                .file_name()
                 .unwrap_or_default()
                 .to_string_lossy()
                 .to_string(),
@@ -113,14 +119,15 @@ impl ArchiveParser {
     /// Extract file list from archive (unified interface)
     pub async fn extract_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         let format = Self::detect_format(file_path).await?;
-        
+
         let archive_entries = match format {
             ArchiveFormat::Zip => self.extract_zip_files(file_path)?,
             ArchiveFormat::SevenZ => self.extract_7z_files(file_path)?,
             ArchiveFormat::Unknown => {
-                return Err(AnalyzerError::unsupported_format(
-                    format!("Unsupported archive format: {}", file_path.display())
-                ));
+                return Err(AnalyzerError::unsupported_format(format!(
+                    "Unsupported archive format: {}",
+                    file_path.display()
+                )));
             }
         };
 
@@ -150,25 +157,31 @@ impl ArchiveParser {
     /// Extract metadata from archive
     pub async fn extract_metadata(&self, file_path: &Path) -> Result<HashMap<String, String>> {
         let mut metadata = HashMap::new();
-        
+
         let format = Self::detect_format(file_path).await?;
         metadata.insert("archive_format".to_string(), format!("{:?}", format));
-        
+
         let file_size = crate::analyzers::common::get_file_size(file_path).await?;
         metadata.insert("file_size".to_string(), file_size.to_string());
-        
+
         // Get entry count
         let entries = self.extract_files(file_path).await?;
         metadata.insert("entry_count".to_string(), entries.len().to_string());
-        
+
         // Calculate total uncompressed size
         let total_size: u64 = entries.iter().map(|e| e.size).sum();
-        metadata.insert("total_uncompressed_size".to_string(), total_size.to_string());
-        
+        metadata.insert(
+            "total_uncompressed_size".to_string(),
+            total_size.to_string(),
+        );
+
         // Calculate compression ratio
         if total_size > 0 {
             let compression_ratio = (file_size as f64 / total_size as f64) * 100.0;
-            metadata.insert("compression_ratio".to_string(), format!("{:.2}%", compression_ratio));
+            metadata.insert(
+                "compression_ratio".to_string(),
+                format!("{:.2}%", compression_ratio),
+            );
         }
 
         Ok(metadata)

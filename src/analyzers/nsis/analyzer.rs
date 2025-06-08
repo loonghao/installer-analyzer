@@ -1,11 +1,11 @@
 //! NSIS analyzer implementation
 
-use crate::core::{Result, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
-use crate::analyzers::{InstallerAnalyzer, common};
 use super::parser::NsisParser;
+use crate::analyzers::{common, InstallerAnalyzer};
+use crate::core::{FileEntry, InstallerFormat, InstallerMetadata, RegistryOperation, Result};
 use async_trait::async_trait;
-use std::path::Path;
 use chrono::Utc;
+use std::path::Path;
 
 /// NSIS installer analyzer
 pub struct NsisAnalyzer {
@@ -30,7 +30,7 @@ impl NsisAnalyzer {
         // Search for NSIS-specific patterns
         let nsis_patterns = [
             "Nullsoft.NSIS.exehead",
-            "NullsoftInst", 
+            "NullsoftInst",
             "NSIS Error",
             "Nullsoft Install System",
         ];
@@ -39,7 +39,11 @@ impl NsisAnalyzer {
         let has_nsis = !matches.is_empty();
 
         if has_nsis {
-            tracing::info!("NSIS signatures found in {}: {:?}", file_path.display(), matches);
+            tracing::info!(
+                "NSIS signatures found in {}: {:?}",
+                file_path.display(),
+                matches
+            );
         }
 
         Ok(has_nsis)
@@ -54,24 +58,31 @@ impl NsisAnalyzer {
         let parser_metadata = self.parser.extract_metadata(file_path)?;
 
         // Build metadata structure
-        let product_name = parser_metadata.get("ProductName").cloned()
-            .or_else(|| {
-                // Try to extract from filename
-                file_path.file_stem()
-                    .and_then(|s| s.to_str())
-                    .map(|s| s.to_string())
-            });
+        let product_name = parser_metadata.get("ProductName").cloned().or_else(|| {
+            // Try to extract from filename
+            file_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string())
+        });
 
-        let product_version = parser_metadata.get("ProductVersion").cloned()
+        let product_version = parser_metadata
+            .get("ProductVersion")
+            .cloned()
             .or_else(|| parser_metadata.get("FileVersion").cloned());
 
-        let manufacturer = parser_metadata.get("CompanyName").cloned()
+        let manufacturer = parser_metadata
+            .get("CompanyName")
+            .cloned()
             .or_else(|| Some("Unknown Publisher".to_string()));
 
         // Combine all properties
         let mut properties = parser_metadata;
         properties.insert("format_type".to_string(), "NSIS Installer".to_string());
-        properties.insert("analyzer_version".to_string(), env!("CARGO_PKG_VERSION").to_string());
+        properties.insert(
+            "analyzer_version".to_string(),
+            env!("CARGO_PKG_VERSION").to_string(),
+        );
 
         Ok(InstallerMetadata {
             format: InstallerFormat::NSIS,
@@ -87,23 +98,32 @@ impl NsisAnalyzer {
 
     /// Extract files from NSIS installer
     async fn extract_nsis_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
-        tracing::info!("Extracting files from NSIS installer: {}", file_path.display());
-        
+        tracing::info!(
+            "Extracting files from NSIS installer: {}",
+            file_path.display()
+        );
+
         let files = self.parser.extract_files(file_path)?;
-        
+
         tracing::info!("Found {} files in NSIS installer", files.len());
-        
+
         Ok(files)
     }
 
     /// Extract registry operations from NSIS installer
     async fn extract_nsis_registry(&self, file_path: &Path) -> Result<Vec<RegistryOperation>> {
-        tracing::info!("Extracting registry operations from NSIS installer: {}", file_path.display());
-        
+        tracing::info!(
+            "Extracting registry operations from NSIS installer: {}",
+            file_path.display()
+        );
+
         let operations = self.parser.extract_registry_operations(file_path)?;
-        
-        tracing::info!("Found {} registry operations in NSIS installer", operations.len());
-        
+
+        tracing::info!(
+            "Found {} registry operations in NSIS installer",
+            operations.len()
+        );
+
         Ok(operations)
     }
 }
@@ -134,21 +154,24 @@ impl InstallerAnalyzer for NsisAnalyzer {
     async fn extract_metadata(&self, file_path: &Path) -> Result<InstallerMetadata> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_nsis_metadata(file_path).await
     }
 
     async fn extract_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_nsis_files(file_path).await
     }
 
-    async fn extract_registry_operations(&self, file_path: &Path) -> Result<Vec<RegistryOperation>> {
+    async fn extract_registry_operations(
+        &self,
+        file_path: &Path,
+    ) -> Result<Vec<RegistryOperation>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_nsis_registry(file_path).await
     }
 }

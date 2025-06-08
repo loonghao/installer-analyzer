@@ -5,4 +5,4 @@ pub mod parser;
 
 // Re-export main components
 pub use analyzer::ArchiveAnalyzer;
-pub use parser::{ArchiveParser, ArchiveFormat, ArchiveEntry};
+pub use parser::{ArchiveEntry, ArchiveFormat, ArchiveParser};

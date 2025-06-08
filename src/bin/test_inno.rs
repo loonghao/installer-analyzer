@@ -1,32 +1,38 @@
-use std::path::Path;
 use installer_analyzer::analyzers::{InnoAnalyzer, InstallerAnalyzer};
+use std::path::Path;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logging
     tracing_subscriber::fmt::init();
-    
+
     println!("Testing InnoSetup analyzer...\n");
-    
+
     let analyzer = InnoAnalyzer::new();
-    
+
     // Test files
     let test_files = [
-        ("tests/data/VSCodeSetup-x64-1.100.0.exe", true),  // Should be InnoSetup
-        ("tests/data/Gitify.Setup.6.3.0.exe", false),      // Should be NSIS
-        ("tests/data/pycharm-2025.1.1.1.exe", false),      // Should be NSIS
-        ("tests/data/ArtFlow-1.5.6.msi", false),           // Should not be InnoSetup
+        ("tests/data/VSCodeSetup-x64-1.100.0.exe", true), // Should be InnoSetup
+        ("tests/data/Gitify.Setup.6.3.0.exe", false),     // Should be NSIS
+        ("tests/data/pycharm-2025.1.1.1.exe", false),     // Should be NSIS
+        ("tests/data/ArtFlow-1.5.6.msi", false),          // Should not be InnoSetup
     ];
-    
+
     println!("=== InnoSetup Detection Test ===");
     for (file_path, expected_inno) in &test_files {
         let path = Path::new(file_path);
         if path.exists() {
             match analyzer.can_analyze(path).await {
                 Ok(can_analyze) => {
-                    let status = if can_analyze == *expected_inno { "✓" } else { "✗" };
-                    println!("  {} {}: InnoSetup = {} (expected {})", 
-                        status, file_path, can_analyze, expected_inno);
+                    let status = if can_analyze == *expected_inno {
+                        "✓"
+                    } else {
+                        "✗"
+                    };
+                    println!(
+                        "  {} {}: InnoSetup = {} (expected {})",
+                        status, file_path, can_analyze, expected_inno
+                    );
                 }
                 Err(e) => {
                     println!("  ✗ {}: Error = {}", file_path, e);
@@ -36,13 +42,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("  - {}: File not found", file_path);
         }
     }
-    
+
     // Test metadata extraction for InnoSetup files
     println!("\n=== InnoSetup Metadata Extraction Test ===");
-    let inno_files = [
-        "tests/data/VSCodeSetup-x64-1.100.0.exe",
-    ];
-    
+    let inno_files = ["tests/data/VSCodeSetup-x64-1.100.0.exe"];
+
     for file_path in &inno_files {
         let path = Path::new(file_path);
         if path.exists() {
@@ -57,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             println!("    ✓ Manufacturer: {:?}", metadata.manufacturer);
                             println!("    ✓ File Size: {}", metadata.file_size);
                             println!("    ✓ Properties: {} items", metadata.properties.len());
-                            
+
                             // Show some properties
                             for (key, value) in metadata.properties.iter().take(5) {
                                 println!("      - {}: {}", key, value);
@@ -75,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("  - {}: File not found", file_path);
         }
     }
-    
+
     // Test file extraction
     println!("\n=== InnoSetup File Extraction Test ===");
     for file_path in &inno_files {
@@ -88,9 +92,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         Ok(files) => {
                             println!("    ✓ Found {} files", files.len());
                             for (i, file) in files.iter().take(8).enumerate() {
-                                println!("      {}. {} ({} bytes) [{}]", 
-                                    i + 1, 
-                                    file.path.display(), 
+                                println!(
+                                    "      {}. {} ({} bytes) [{}]",
+                                    i + 1,
+                                    file.path.display(),
                                     file.size,
                                     file.compression.as_deref().unwrap_or("None")
                                 );
@@ -107,7 +112,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     // Test registry extraction
     println!("\n=== InnoSetup Registry Extraction Test ===");
     for file_path in &inno_files {
@@ -121,11 +126,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             println!("    ✓ Found {} registry operations", operations.len());
                             for (i, op) in operations.iter().take(5).enumerate() {
                                 match op {
-                                    installer_analyzer::core::RegistryOperation::CreateKey { key_path, .. } => {
+                                    installer_analyzer::core::RegistryOperation::CreateKey {
+                                        key_path,
+                                        ..
+                                    } => {
                                         println!("      {}. Create Key: {}", i + 1, key_path);
                                     }
-                                    installer_analyzer::core::RegistryOperation::SetValue { key_path, value_name, .. } => {
-                                        println!("      {}. Set Value: {}\\{}", i + 1, key_path, value_name);
+                                    installer_analyzer::core::RegistryOperation::SetValue {
+                                        key_path,
+                                        value_name,
+                                        ..
+                                    } => {
+                                        println!(
+                                            "      {}. Set Value: {}\\{}",
+                                            i + 1,
+                                            key_path,
+                                            value_name
+                                        );
                                     }
                                     _ => {
                                         println!("      {}. Other operation", i + 1);
@@ -144,15 +161,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     // Test format comparison
     println!("\n=== Format Comparison Test ===");
     let all_files = [
-        "tests/data/VSCodeSetup-x64-1.100.0.exe",  // InnoSetup
-        "tests/data/Gitify.Setup.6.3.0.exe",       // NSIS
-        "tests/data/ArtFlow-1.5.6.msi",            // MSI
+        "tests/data/VSCodeSetup-x64-1.100.0.exe", // InnoSetup
+        "tests/data/Gitify.Setup.6.3.0.exe",      // NSIS
+        "tests/data/ArtFlow-1.5.6.msi",           // MSI
     ];
-    
+
     for file_path in &all_files {
         let path = Path::new(file_path);
         if path.exists() {
@@ -170,7 +187,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     println!("\nInnoSetup analyzer test completed!");
     Ok(())
 }

@@ -1,6 +1,6 @@
 //! System monitoring components
 
-use crate::core::{Result, FileOperation, RegistryOperation};
+use crate::core::{FileOperation, RegistryOperation, Result};
 use async_trait::async_trait;
 
 /// Trait for system monitors
@@ -8,10 +8,10 @@ use async_trait::async_trait;
 pub trait SystemMonitor: Send + Sync {
     /// Start monitoring
     async fn start(&mut self) -> Result<()>;
-    
+
     /// Stop monitoring and return collected operations
     async fn stop(&mut self) -> Result<()>;
-    
+
     /// Check if monitoring is active
     fn is_active(&self) -> bool;
 }
@@ -29,7 +29,7 @@ impl FileSystemMonitor {
             operations: Vec::new(),
         }
     }
-    
+
     pub fn get_operations(&self) -> &[FileOperation] {
         &self.operations
     }
@@ -42,13 +42,13 @@ impl SystemMonitor for FileSystemMonitor {
         self.active = true;
         Ok(())
     }
-    
+
     async fn stop(&mut self) -> Result<()> {
         tracing::info!("Stopping file system monitoring");
         self.active = false;
         Ok(())
     }
-    
+
     fn is_active(&self) -> bool {
         self.active
     }
@@ -67,7 +67,7 @@ impl RegistryMonitor {
             operations: Vec::new(),
         }
     }
-    
+
     pub fn get_operations(&self) -> &[RegistryOperation] {
         &self.operations
     }
@@ -80,13 +80,13 @@ impl SystemMonitor for RegistryMonitor {
         self.active = true;
         Ok(())
     }
-    
+
     async fn stop(&mut self) -> Result<()> {
         tracing::info!("Stopping registry monitoring");
         self.active = false;
         Ok(())
     }
-    
+
     fn is_active(&self) -> bool {
         self.active
     }

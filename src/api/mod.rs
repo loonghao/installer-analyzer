@@ -32,7 +32,11 @@ impl ApiServer {
 
     pub async fn start(&self) -> Result<()> {
         tracing::info!("API server functionality not yet implemented");
-        tracing::info!("Would start server on {}:{}", self.config.host, self.config.port);
+        tracing::info!(
+            "Would start server on {}:{}",
+            self.config.host,
+            self.config.port
+        );
         Ok(())
     }
 }

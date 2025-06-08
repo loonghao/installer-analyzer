@@ -1,21 +1,21 @@
 //! Installer Analyzer Library
-//! 
+//!
 //! A comprehensive tool for analyzing software installation packages and monitoring installation behavior.
 //! Supports static analysis of various installer formats (MSI, NSIS, InnoSetup) and dynamic sandbox monitoring.
 
-pub mod core;
 pub mod analyzers;
-pub mod sandbox;
+pub mod api;
+pub mod cli;
+pub mod core;
 pub mod monitoring;
 pub mod reporting;
-pub mod cli;
-pub mod api;
+pub mod sandbox;
 pub mod utils;
 
 // Re-export commonly used types
 pub use core::{
-    error::{Result, AnalyzerError},
-    types::{InstallerFormat, InstallerMetadata, AnalysisResult},
+    error::{AnalyzerError, Result},
+    types::{AnalysisResult, InstallerFormat, InstallerMetadata},
 };
 
 // Re-export main analyzer trait
