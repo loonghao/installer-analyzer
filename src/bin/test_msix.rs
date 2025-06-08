@@ -151,11 +151,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 </Package>"#;
 
     println!("  Testing XML parsing with sample manifest...");
-    let parser = installer_analyzer::analyzers::msix::MsixParser::new();
+    let _parser = installer_analyzer::analyzers::msix::MsixParser::new();
 
     // We can't directly test parse_manifest_content as it's private,
     // but we can test the XML attribute extraction logic
-    let test_xml = r#"<Identity Name="TestApp" Publisher="CN=Test" Version="1.0.0" ProcessorArchitecture="x64" />"#;
+    let _test_xml = r#"<Identity Name="TestApp" Publisher="CN=Test" Version="1.0.0" ProcessorArchitecture="x64" />"#;
 
     // Since the methods are private, we'll just verify the analyzer structure
     println!("    ✓ MSIX parser created successfully");

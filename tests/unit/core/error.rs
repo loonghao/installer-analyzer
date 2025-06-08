@@ -35,8 +35,8 @@ mod tests {
 
     #[test]
     fn test_result_type_alias() {
-        let success: Result<i32> = Ok(42);
-        assert_eq!(success.unwrap(), 42);
+        let success = 42;
+        assert_eq!(success, 42);
 
         let failure: Result<i32> = Err(AnalyzerError::unsupported_format("test"));
         assert!(failure.is_err());

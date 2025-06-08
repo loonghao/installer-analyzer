@@ -65,7 +65,7 @@ impl ReportGenerator {
             "version": env!("CARGO_PKG_VERSION")
         });
 
-        serde_json::to_string_pretty(&ci_report).map_err(|e| AnalyzerError::SerializationError(e))
+        serde_json::to_string_pretty(&ci_report).map_err(AnalyzerError::SerializationError)
     }
 
     /// Generate modern HTML report using templates

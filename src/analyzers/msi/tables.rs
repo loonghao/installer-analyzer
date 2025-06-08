@@ -214,9 +214,9 @@ impl MsiTables {
             let target_path = Some(PathBuf::from(format!("TARGETDIR\\{}", display_name)));
 
             let attributes = FileAttributes {
-                readonly: file.attributes.map_or(false, |a| a & 1 != 0),
-                hidden: file.attributes.map_or(false, |a| a & 2 != 0),
-                system: file.attributes.map_or(false, |a| a & 4 != 0),
+                readonly: file.attributes.is_some_and(|a| a & 1 != 0),
+                hidden: file.attributes.is_some_and(|a| a & 2 != 0),
+                system: file.attributes.is_some_and(|a| a & 4 != 0),
                 executable: display_name.ends_with(".exe") || display_name.ends_with(".dll"),
             };
 
@@ -284,15 +284,14 @@ impl MsiTables {
     /// Parse registry value string and determine type
     fn parse_registry_value(value_str: &str) -> (RegistryValueType, RegistryValue) {
         // MSI registry values can have prefixes indicating type
-        if value_str.starts_with("#x") {
+        if let Some(hex_str) = value_str.strip_prefix("#x") {
             // Binary data
-            let hex_str = &value_str[2..];
             if let Ok(bytes) = hex::decode(hex_str) {
                 return (RegistryValueType::Binary, RegistryValue::Binary(bytes));
             }
-        } else if value_str.starts_with("#") {
+        } else if let Some(stripped) = value_str.strip_prefix("#") {
             // DWORD value
-            if let Ok(dword) = value_str[1..].parse::<u32>() {
+            if let Ok(dword) = stripped.parse::<u32>() {
                 return (RegistryValueType::DWord, RegistryValue::DWord(dword));
             }
         }

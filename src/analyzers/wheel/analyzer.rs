@@ -41,7 +41,7 @@ impl WheelAnalyzer {
                     let product_version = Some(metadata.version.clone());
                     let manufacturer = metadata
                         .author
-                        .or_else(|| metadata.maintainer)
+                        .or(metadata.maintainer)
                         .or_else(|| Some("Unknown".to_string()));
                     (product_name, product_version, manufacturer)
                 }

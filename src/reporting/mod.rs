@@ -18,6 +18,7 @@ pub enum ReportFormat {
 }
 
 /// Trait for report generators
+#[allow(async_fn_in_trait)]
 pub trait Reporter {
     /// Generate report in specified format
     async fn generate_report(

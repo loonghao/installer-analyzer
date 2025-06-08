@@ -50,10 +50,10 @@ pub fn is_admin() -> bool {
                 );
 
                 if result.as_bool() {
-                    CloseHandle(token).ok();
+                    let _ = CloseHandle(token).ok();
                     return elevation.TokenIsElevated != 0;
                 }
-                CloseHandle(token).ok();
+                let _ = CloseHandle(token).ok();
             }
         }
     }
