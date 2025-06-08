@@ -62,6 +62,10 @@ handlebars = "4.0"
 
 # Open browser
 open = "5.0"
+# CLI enhancement libraries
+indicatif = "0.17"      # Progress bars and spinners
+console = "0.15"        # Cross-platform terminal utilities
+colored = "2.0"         # Cross-platform colored terminal text
 
 [dev-dependencies]
 tempfile = "3.0"

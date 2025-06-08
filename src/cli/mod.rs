@@ -4,6 +4,7 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 pub mod commands;
+pub mod output;
 
 /// Installer Analyzer CLI
 #[derive(Parser)]
@@ -35,9 +36,9 @@ pub enum Commands {
         #[arg(short, long)]
         output: Option<PathBuf>,
 
-        /// Output format (json, html, markdown)
-        #[arg(short, long, default_value = "json")]
-        format: String,
+        /// Output format (json, html, markdown). Auto-detected from file extension if not specified.
+        #[arg(short, long)]
+        format: Option<String>,
 
         /// Automatically open HTML report in browser
         #[arg(long)]
@@ -54,9 +55,9 @@ pub enum Commands {
         #[arg(short, long)]
         output: Option<PathBuf>,
 
-        /// Output format (json, html, markdown)
-        #[arg(short, long, default_value = "json")]
-        format: String,
+        /// Output format (json, html, markdown). Auto-detected from file extension if not specified.
+        #[arg(short, long)]
+        format: Option<String>,
 
         /// Maximum execution time in seconds
         #[arg(short, long, default_value = "300")]
@@ -81,9 +82,9 @@ pub enum Commands {
         #[arg(short, long)]
         output_dir: PathBuf,
 
-        /// Output format (json, html, markdown)
-        #[arg(short, long, default_value = "json")]
-        format: String,
+        /// Output format (json, html, markdown). Defaults to json for batch processing.
+        #[arg(short, long)]
+        format: Option<String>,
 
         /// Use sandbox analysis
         #[arg(short, long)]

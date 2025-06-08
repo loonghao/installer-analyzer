@@ -3,12 +3,19 @@
 use clap::Parser;
 use installer_analyzer::cli::commands;
 use installer_analyzer::cli::{Cli, Commands};
+use installer_analyzer::cli::output::{CliOutput, init_console};
 use installer_analyzer::utils;
 use std::process;
 
 #[tokio::main]
 async fn main() {
+    // Initialize console for better Windows compatibility
+    init_console();
+
     let cli = Cli::parse();
+
+    // Show startup banner
+    CliOutput::startup_banner(env!("CARGO_PKG_VERSION"));
 
     // Initialize logging
     if let Err(e) = utils::init_logging(cli.verbose) {
@@ -31,7 +38,7 @@ async fn main() {
             output,
             format,
             open,
-        } => commands::handle_analyze(&input, output.as_deref(), &format, open).await,
+        } => commands::handle_analyze(&input, output.as_deref(), format.as_deref(), open).await,
         Commands::Sandbox {
             input,
             output,
@@ -40,7 +47,7 @@ async fn main() {
             network,
             open,
         } => {
-            commands::handle_sandbox(&input, output.as_deref(), &format, timeout, network, open)
+            commands::handle_sandbox(&input, output.as_deref(), format.as_deref(), timeout, network, open)
                 .await
         }
         Commands::Batch {
@@ -48,13 +55,13 @@ async fn main() {
             output_dir,
             format,
             sandbox,
-        } => commands::handle_batch(&input_dir, &output_dir, &format, sandbox).await,
+        } => commands::handle_batch(&input_dir, &output_dir, format.as_deref(), sandbox).await,
         Commands::Info => commands::handle_info().await,
     };
 
     // Handle result
     if let Err(e) = result {
-        eprintln!("Error: {}", e);
+        CliOutput::error(&format!("Error: {}", e));
         process::exit(1);
     }
 }
