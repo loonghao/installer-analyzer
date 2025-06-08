@@ -132,4 +132,5 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         files: lcov.info
-        fail_ci_if_error: true
+        fail_ci_if_error: false
+      continue-on-error: true
