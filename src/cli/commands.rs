@@ -1,6 +1,7 @@
 //! CLI command implementations
 
 use crate::analyzers::AnalyzerFactory;
+use crate::cli::output::CliOutput;
 use crate::core::{AnalysisResult, AnalyzerError, Result, SandboxConfig};
 use crate::reporting::{ReportFormat, ReportGenerator, Reporter};
 use crate::sandbox::{Sandbox, SandboxController};
@@ -13,10 +14,10 @@ use uuid::Uuid;
 pub async fn handle_analyze(
     input: &Path,
     output: Option<&Path>,
-    format: &str,
+    format: Option<&str>,
     open_browser: bool,
 ) -> Result<()> {
-    tracing::info!("Starting static analysis of: {}", input.display());
+    CliOutput::info(&format!("Starting static analysis of: {}", input.display()));
 
     // Create analyzer
     let analyzer = AnalyzerFactory::create_analyzer(input).await?;
@@ -42,22 +43,28 @@ pub async fn handle_analyze(
 
     // Generate and save report
     let report_generator = ReportGenerator::new();
-    let report_format = parse_format(format)?;
+    let report_format = determine_format(format, output)?;
 
     if let Some(output_path) = output {
         let is_html = matches!(report_format, ReportFormat::Html);
+        let format_name = format_to_string(&report_format);
+
         report_generator
             .save_report(&result, report_format, output_path)
             .await?;
-        println!(
-            "Analysis complete. Report saved to: {}",
-            output_path.display()
+
+        CliOutput::analysis_summary(
+            format_name,
+            &output_path.display().to_string(),
+            analysis_duration,
+            Some(result.files.len()),
         );
 
         // Open browser if requested and format is HTML
         if open_browser && is_html {
+            CliOutput::browser_info("Opening report in browser...");
             if let Err(e) = open_browser_to_file(output_path) {
-                eprintln!("Warning: Failed to open browser: {}", e);
+                CliOutput::warning(&format!("Failed to open browser: {}", e));
             }
         }
     } else {
@@ -74,12 +81,12 @@ pub async fn handle_analyze(
 pub async fn handle_sandbox(
     input: &Path,
     output: Option<&Path>,
-    format: &str,
+    format: Option<&str>,
     timeout: u64,
     enable_network: bool,
     open_browser: bool,
 ) -> Result<()> {
-    tracing::info!("Starting sandbox analysis of: {}", input.display());
+    CliOutput::info(&format!("Starting sandbox analysis of: {}", input.display()));
 
     // Create sandbox configuration
     let config = SandboxConfig {
@@ -96,22 +103,25 @@ pub async fn handle_sandbox(
 
     // Generate and save report
     let report_generator = ReportGenerator::new();
-    let report_format = parse_format(format)?;
+    let report_format = determine_format(format, output)?;
 
     if let Some(output_path) = output {
         let is_html = matches!(report_format, ReportFormat::Html);
+        let format_name = format_to_string(&report_format);
+
         report_generator
             .save_report(&result, report_format, output_path)
             .await?;
-        println!(
-            "Sandbox analysis complete. Report saved to: {}",
-            output_path.display()
-        );
+
+        CliOutput::success("Sandbox analysis complete!");
+        CliOutput::file_info("Report format", format_name);
+        CliOutput::folder_info("Report saved to", &output_path.display().to_string());
 
         // Open browser if requested and format is HTML
         if open_browser && is_html {
+            CliOutput::browser_info("Opening report in browser...");
             if let Err(e) = open_browser_to_file(output_path) {
-                eprintln!("Warning: Failed to open browser: {}", e);
+                CliOutput::warning(&format!("Failed to open browser: {}", e));
             }
         }
     } else {
@@ -128,46 +138,55 @@ pub async fn handle_sandbox(
 pub async fn handle_batch(
     input_dir: &Path,
     output_dir: &Path,
-    format: &str,
+    format: Option<&str>,
     use_sandbox: bool,
 ) -> Result<()> {
-    tracing::info!(
-        "Starting batch analysis of directory: {}",
-        input_dir.display()
-    );
+    CliOutput::section_header("Batch Analysis");
+    CliOutput::folder_info("Input directory", &input_dir.display().to_string());
+    CliOutput::folder_info("Output directory", &output_dir.display().to_string());
 
     // Create output directory if it doesn't exist
     tokio::fs::create_dir_all(output_dir).await?;
 
-    // Find all installer files
+    // Find all installer files first to get total count
     let mut entries = tokio::fs::read_dir(input_dir).await?;
-    let mut processed = 0;
-    let mut failed = 0;
+    let mut installer_files = Vec::new();
 
     while let Some(entry) = entries.next_entry().await? {
         let path = entry.path();
-
-        if !path.is_file() {
-            continue;
+        if path.is_file() && is_supported_file(&path) {
+            installer_files.push(path);
         }
+    }
 
-        // Check if it's a supported installer format
-        if !is_supported_file(&path) {
-            continue;
-        }
+    if installer_files.is_empty() {
+        CliOutput::warning("No supported installer files found in the directory");
+        return Ok(());
+    }
 
+    CliOutput::info(&format!("Found {} installer files to process", installer_files.len()));
+
+    // Create progress bar
+    let pb = CliOutput::create_progress_bar(installer_files.len() as u64, "Processing installers");
+
+    let mut processed = 0;
+    let mut failed = 0;
+    let batch_start = Instant::now();
+
+    for path in installer_files {
         let file_name = path
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("unknown");
 
+        let format_str = format.unwrap_or("json");
         let output_file = output_dir.join(format!(
             "{}_report.{}",
             file_name,
-            get_file_extension(format)
+            get_file_extension(format_str)
         ));
 
-        println!("Processing: {}", path.display());
+        pb.set_message(format!("Processing: {}", file_name));
 
         let result = if use_sandbox {
             handle_sandbox(&path, Some(&output_file), format, 300, false, false).await
@@ -178,18 +197,21 @@ pub async fn handle_batch(
         match result {
             Ok(_) => {
                 processed += 1;
-                println!("✓ Completed: {}", path.display());
+                pb.println(format!("✓ Completed: {}", path.display()));
             }
             Err(e) => {
                 failed += 1;
-                eprintln!("✗ Failed: {} - {}", path.display(), e);
+                pb.println(format!("✗ Failed: {} - {}", path.display(), e));
             }
         }
+
+        pb.inc(1);
     }
 
-    println!("\nBatch processing complete:");
-    println!("  Processed: {}", processed);
-    println!("  Failed: {}", failed);
+    CliOutput::finish_progress_success(&pb, "Batch processing complete");
+
+    let total_duration = batch_start.elapsed();
+    CliOutput::batch_summary(processed, failed, total_duration);
 
     Ok(())
 }
@@ -258,6 +280,71 @@ fn parse_format(format: &str) -> Result<ReportFormat> {
     }
 }
 
+/// Detect format from output file extension
+fn detect_format_from_path(path: &Path) -> Option<ReportFormat> {
+    if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
+        match ext.to_lowercase().as_str() {
+            "json" => Some(ReportFormat::Json),
+            "html" | "htm" => Some(ReportFormat::Html),
+            "md" | "markdown" => Some(ReportFormat::Markdown),
+            _ => None,
+        }
+    } else {
+        None
+    }
+}
+
+/// Determine the final format to use, considering output path and explicit format
+fn determine_format(explicit_format: Option<&str>, output_path: Option<&Path>) -> Result<ReportFormat> {
+    // If output path is provided, try to detect format from extension
+    if let Some(path) = output_path {
+        if let Some(detected_format) = detect_format_from_path(path) {
+            // If no explicit format provided, use detected format
+            if explicit_format.is_none() {
+                return Ok(detected_format);
+            }
+            // If explicit format differs from detected, warn but use explicit
+            if let Some(format_str) = explicit_format {
+                let explicit_parsed = parse_format(format_str)?;
+                if !format_matches(&explicit_parsed, &detected_format) {
+                    eprintln!(
+                        "Warning: Explicit format '{}' differs from file extension. Using explicit format.",
+                        format_str
+                    );
+                }
+                return Ok(explicit_parsed);
+            }
+        }
+    }
+
+    // Fall back to explicit format or default
+    if let Some(format_str) = explicit_format {
+        parse_format(format_str)
+    } else {
+        // Default to JSON if no format specified and no output file to detect from
+        Ok(ReportFormat::Json)
+    }
+}
+
+/// Check if two formats match
+fn format_matches(format1: &ReportFormat, format2: &ReportFormat) -> bool {
+    matches!(
+        (format1, format2),
+        (ReportFormat::Json, ReportFormat::Json)
+            | (ReportFormat::Html, ReportFormat::Html)
+            | (ReportFormat::Markdown, ReportFormat::Markdown)
+    )
+}
+
+/// Convert ReportFormat to human-readable string
+fn format_to_string(format: &ReportFormat) -> &'static str {
+    match format {
+        ReportFormat::Json => "JSON",
+        ReportFormat::Html => "HTML",
+        ReportFormat::Markdown => "Markdown",
+    }
+}
+
 /// Get file extension for report format
 fn get_file_extension(format: &str) -> &str {
     match format.to_lowercase().as_str() {
@@ -297,6 +384,6 @@ fn open_browser_to_file(file_path: &Path) -> Result<()> {
     open::that(&url)
         .map_err(|e| AnalyzerError::config_error(format!("Failed to open browser: {}", e)))?;
 
-    println!("Opening report in browser: {}", url);
+    CliOutput::success(&format!("Report opened in browser: {}", url));
     Ok(())
 }

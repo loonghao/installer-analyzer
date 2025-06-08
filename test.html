@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installer Analysis Report - Unknown Application</title>
+    
+    <!-- CDN Dependencies -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --dark-color: #1e293b;
+        }
+        
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 12px 12px 0 0 !important;
+        }
+        
+        .badge-custom {
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+        }
+        
+        .file-tree {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #ffffff;
+        }
+
+        .file-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s;
+        }
+
+        .file-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Enhanced File Tree Styles */
+        .file-tree-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #ffffff;
+            overflow: hidden;
+        }
+
+        .file-tree-header {
+            background: #f8fafc;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .file-tree-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .file-tree-search {
+            flex: 1;
+            max-width: 300px;
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+
+        .file-tree-body {
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .tree-node {
+            margin: 2px 0;
+        }
+
+        .tree-node-content {
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            user-select: none;
+        }
+
+        .tree-node-content:hover {
+            background-color: #f3f4f6;
+        }
+
+        .tree-node-content.selected {
+            background-color: #dbeafe;
+        }
+
+        .tree-node-indent {
+            width: 20px;
+            display: inline-block;
+        }
+
+        .tree-node-toggle {
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 4px;
+            cursor: pointer;
+            border-radius: 2px;
+            font-size: 12px;
+        }
+
+        .tree-node-toggle:hover {
+            background-color: #e5e7eb;
+        }
+
+        .tree-node-toggle.expanded::before {
+            content: "▼";
+        }
+
+        .tree-node-toggle.collapsed::before {
+            content: "▶";
+        }
+
+        .tree-node-toggle.leaf {
+            visibility: hidden;
+        }
+
+        .tree-node-icon {
+            margin-right: 8px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .tree-node-label {
+            flex: 1;
+            font-size: 0.875rem;
+        }
+
+        .tree-node-size {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-left: 8px;
+        }
+
+        .tree-node-children {
+            margin-left: 20px;
+        }
+
+        .tree-node-children.collapsed {
+            display: none;
+        }
+
+        .file-tree-stats {
+            padding: 8px 16px;
+            background: #f9fafb;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .progress-custom {
+            height: 8px;
+            border-radius: 4px;
+        }
+        
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background-color: #f8fafc;
+            border-color: #e2e8f0;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .collapsible-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .metric-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-label {
+            color: var(--secondary-color);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .code-hash {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-shield-alt me-2"></i>
+                Installer Analysis Report
+            </span>
+            <span class="navbar-text">
+                <i class="fas fa-clock me-1"></i>
+                Generated: 2025-06-08 11:28:45 UTC
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title mb-0">
+                            <i class="fas fa-box me-2"></i>
+                            Unknown Application
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Product Name:</strong></td>
+                                        <td>Unknown Application</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Version:</strong></td>
+                                        <td>1.0.0</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Manufacturer:</strong></td>
+                                        <td>Unknown Publisher</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Format:</strong></td>
+                                        <td><span class="badge bg-primary">NSIS</span></td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>File Size:</strong></td>
+                                        <td>1.13 MB</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>File Hash:</strong></td>
+                                        <td><span class="code-hash">1df9ecb610c3dc5e</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Analysis Type:</strong></td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-search me-1"></i>
+                                                Static Analysis
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Duration:</strong></td>
+                                        <td>2ms</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Analysis Summary
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-primary">4</div>
+                                    <div class="metric-label">Total Files</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-success">3</div>
+                                    <div class="metric-label">Registry Operations</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-warning">2</div>
+                                    <div class="metric-label">Executables</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-info">1.24 MB</div>
+                                    <div class="metric-label">Total Size</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <canvas id="fileSizeChart" width="400" height="200"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Analysis Progress</h5>
+                                <div class="mb-2">
+                                    <small>File Analysis</small>
+                                    <div class="progress progress-custom">
+                                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <small>Registry Analysis</small>
+                                    <div class="progress progress-custom">
+                                        <div class="progress-bar bg-info" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <small>Security Scan</small>
+                                    <div class="progress progress-custom">
+                                        <div class="progress-bar bg-warning" style="width: 85%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Files Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-folder-open me-2"></i>
+                            File Structure (4 files, 0 directories)
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- File Tree Container -->
+                        <div class="file-tree-container">
+                            <div class="file-tree-header">
+                                <div class="file-tree-controls">
+                                    <input type="text" class="file-tree-search" id="fileTreeSearch" placeholder="Search files...">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="expandAllNodes()">
+                                        <i class="fas fa-expand-arrows-alt"></i> Expand All
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="collapseAllNodes()">
+                                        <i class="fas fa-compress-arrows-alt"></i> Collapse All
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="file-tree-body" id="fileTreeBody">
+                                <!-- Tree nodes will be rendered by JavaScript -->
+                            </div>
+                            <div class="file-tree-stats">
+                                <i class="fas fa-info-circle me-1"></i>
+                                4 files in 0 directories
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legacy File Groups (Collapsed by default) -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <button class="btn btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#legacyFileGroups">
+                                <i class="fas fa-list me-2"></i>
+                                File Groups (Legacy View)
+                            </button>
+                        </h3>
+                    </div>
+                    <div class="collapse" id="legacyFileGroups">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-cog me-2"></i>Executables (2)</h5>
+                                    <div class="file-tree">
+                                        <div class="file-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-cog text-danger me-2"></i>
+                                                    <span class="fw-medium">uninstall.exe</span>
+                                                </div>
+                                                <small class="text-muted">100.00 KB</small>
+                                            </div>
+                                        </div>
+                                        <div class="file-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-cog text-danger me-2"></i>
+                                                    <span class="fw-medium">AccuRig_Webinstaller.exe</span>
+                                                </div>
+                                                <small class="text-muted">1.13 MB</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-book me-2"></i>Libraries (0)</h5>
+                                    <div class="file-tree">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registry Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-database me-2"></i>
+                            Registry Operations (3 operations)
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Operation</th>
+                                        <th>Key Path</th>
+                                        <th>Value Name</th>
+                                        <th>Value Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="badge bg-success">Create Key</span></td>
+                                        <td><code>HKEY_LOCAL_MACHINE\SOFTWARE\MyApp</code></td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-primary">Set Value</span></td>
+                                        <td><code>HKEY_LOCAL_MACHINE\SOFTWARE\MyApp</code></td>
+                                        <td>InstallDir</td>
+                                        <td>$INSTDIR</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-primary">Set Value</span></td>
+                                        <td><code>HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\MyApp</code></td>
+                                        <td>DisplayName</td>
+                                        <td>My Application</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Analysis Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            Security Analysis
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card border-success h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                                        <h5>Risk Level</h5>
+                                        <span class="badge bg-success fs-6">Low</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <h5>Security Metrics</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled">
+                                            <li><strong>Executable Files:</strong> 2</li>
+                                            <li><strong>Large Files (>50MB):</strong> 0</li>
+                                            <li><strong>Total Package Size:</strong> 1.24 MB</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled">
+                                            <li><strong>Registry Operations:</strong> 3</li>
+                                            <li><strong>Dynamic Analysis:</strong> No</li>
+                                            <li><strong>File Modifications:</strong> 0</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center py-4 text-muted">
+            <p>Report generated by Installer Analyzer v0.2.0 | Session ID: 21a5d20f-187b-44c7-9853-e75ac004f0fe</p>
+        </footer>
+    </div>
+
+    <!-- Tree Node Template -->
+    <script id="tree-node-template" type="text/x-handlebars-template">
+        <div class="tree-node" data-path="" data-type="">
+            <div class="tree-node-content" onclick="toggleNode(this)">
+                <!-- Indentation will be handled by JavaScript -->
+                <span class="tree-node-toggle leaf"></span>
+                <span class="tree-node-icon">
+                    <i class=""></i>
+                </span>
+                <span class="tree-node-label"></span>
+                <span class="tree-node-size"></span>
+            </div>
+        </div>
+    </script>
+
+    <!-- CDN Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.min.js"></script>
+    
+    <script>
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // File size chart
+        const ctx = document.getElementById('fileSizeChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Executables', 'Libraries', 'Resources', 'Documentation', 'Other'],
+                    datasets: [{
+                        data: [1284616, 0, 0, 15360, 0],
+                        backgroundColor: [
+                            '#ef4444',
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#6b7280'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // File Tree Functionality
+        function toggleNode(element) {
+            const treeNode = element.closest('.tree-node');
+            const toggle = element.querySelector('.tree-node-toggle');
+            const children = treeNode.querySelector('.tree-node-children');
+
+            if (children && !toggle.classList.contains('leaf')) {
+                if (toggle.classList.contains('collapsed')) {
+                    toggle.classList.remove('collapsed');
+                    toggle.classList.add('expanded');
+                    children.classList.remove('collapsed');
+                } else {
+                    toggle.classList.remove('expanded');
+                    toggle.classList.add('collapsed');
+                    children.classList.add('collapsed');
+                }
+            }
+
+            // Update selection
+            document.querySelectorAll('.tree-node-content.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            element.classList.add('selected');
+        }
+
+        function expandAllNodes() {
+            document.querySelectorAll('.tree-node-toggle.collapsed').forEach(toggle => {
+                toggle.classList.remove('collapsed');
+                toggle.classList.add('expanded');
+            });
+            document.querySelectorAll('.tree-node-children.collapsed').forEach(children => {
+                children.classList.remove('collapsed');
+            });
+        }
+
+        function collapseAllNodes() {
+            document.querySelectorAll('.tree-node-toggle.expanded').forEach(toggle => {
+                toggle.classList.remove('expanded');
+                toggle.classList.add('collapsed');
+            });
+            document.querySelectorAll('.tree-node-children').forEach(children => {
+                children.classList.add('collapsed');
+            });
+        }
+
+        // File Tree Search
+        document.getElementById('fileTreeSearch')?.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const treeNodes = document.querySelectorAll('.tree-node');
+
+            treeNodes.forEach(node => {
+                const label = node.querySelector('.tree-node-label')?.textContent.toLowerCase() || '';
+                const path = node.dataset.path?.toLowerCase() || '';
+
+                if (searchTerm === '' || label.includes(searchTerm) || path.includes(searchTerm)) {
+                    node.style.display = '';
+                    // Show parent nodes
+                    let parent = node.parentElement;
+                    while (parent && parent.classList.contains('tree-node-children')) {
+                        parent.style.display = '';
+                        parent.classList.remove('collapsed');
+                        const parentToggle = parent.parentElement?.querySelector('.tree-node-toggle');
+                        if (parentToggle) {
+                            parentToggle.classList.remove('collapsed');
+                            parentToggle.classList.add('expanded');
+                        }
+                        parent = parent.parentElement?.parentElement;
+                    }
+                } else {
+                    node.style.display = 'none';
+                }
+            });
+        });
+
+        // File tree data (injected by template)
+        const fileTreeData = {"nodes":[{"name":"AccuRig_Webinstaller.exe","path":"AccuRig_Webinstaller.exe","is_directory":false,"size":1182216,"size_formatted":"1.13 MB","file_type":"executable","icon_class":"fas fa-cog text-danger","children":[],"depth":0},{"name":"license.txt","path":"license.txt","is_directory":false,"size":10240,"size_formatted":"10.00 KB","file_type":"document","icon_class":"fas fa-file-alt text-secondary","children":[],"depth":0},{"name":"readme.txt","path":"readme.txt","is_directory":false,"size":5120,"size_formatted":"5.00 KB","file_type":"document","icon_class":"fas fa-file-alt text-secondary","children":[],"depth":0},{"name":"uninstall.exe","path":"uninstall.exe","is_directory":false,"size":102400,"size_formatted":"100.00 KB","file_type":"executable","icon_class":"fas fa-cog text-danger","children":[],"depth":0}],"total_files":4,"total_directories":0};
+
+        // Render tree node
+        function renderTreeNode(node, depth = 0) {
+            const hasChildren = node.children && node.children.length > 0;
+            const toggleClass = hasChildren ? 'collapsed' : 'leaf';
+            const indentSpans = '    '.repeat(depth);
+
+            let html = `
+                <div class="tree-node" data-path="${node.path}" data-type="${node.file_type}">
+                    <div class="tree-node-content" onclick="toggleNode(this)" style="padding-left: ${depth * 20}px;">
+                        <span class="tree-node-toggle ${toggleClass}"></span>
+                        <span class="tree-node-icon">
+                            <i class="${node.icon_class}"></i>
+                        </span>
+                        <span class="tree-node-label">${node.name}</span>
+                        <span class="tree-node-size">${node.size_formatted}</span>
+                    </div>`;
+
+            if (hasChildren) {
+                html += `<div class="tree-node-children collapsed">`;
+                node.children.forEach(child => {
+                    html += renderTreeNode(child, depth + 1);
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        // Initialize file tree
+        document.addEventListener('DOMContentLoaded', function() {
+            // Render file tree
+            const fileTreeBody = document.getElementById('fileTreeBody');
+            if (fileTreeBody && fileTreeData && fileTreeData.nodes) {
+                let html = '';
+                fileTreeData.nodes.forEach(node => {
+                    html += renderTreeNode(node);
+                });
+                fileTreeBody.innerHTML = html;
+
+                // Auto-expand first level directories
+                document.querySelectorAll('.tree-node').forEach(node => {
+                    const depth = node.dataset.path?.split(/[/\\]/).length || 1;
+                    if (depth <= 2) { // Expand first two levels
+                        const toggle = node.querySelector('.tree-node-toggle');
+                        const children = node.querySelector('.tree-node-children');
+                        if (toggle && children && !toggle.classList.contains('leaf')) {
+                            toggle.classList.remove('collapsed');
+                            toggle.classList.add('expanded');
+                            children.classList.remove('collapsed');
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
