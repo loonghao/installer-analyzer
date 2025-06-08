@@ -191,8 +191,8 @@ pub fn init_console() {
     // Enable ANSI colors on Windows
     #[cfg(windows)]
     {
-        let _ = console::set_colors_enabled(true);
-        let _ = console::set_colors_enabled_stderr(true);
+        console::set_colors_enabled(true);
+        console::set_colors_enabled_stderr(true);
     }
 }
 
@@ -201,6 +201,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[allow(clippy::const_is_empty)] // We want to test that constants are defined
     fn test_icons_windows_fallback() {
         // Test that icons are properly defined for both platforms
         assert!(!Icons::SUCCESS.is_empty());
