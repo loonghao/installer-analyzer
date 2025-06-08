@@ -4,29 +4,27 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
-  actions: write
-  checks: write
-  statuses: write
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
-# This tool is designed for Windows environments only
 jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
+      upload_url: ${{ steps.release.outputs.upload_url }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+          
       - name: Release Please
         id: release
         uses: googleapis/release-please-action@v4
@@ -34,7 +32,6 @@ jobs:
           release-type: rust
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
-          token: ${{ secrets.GITHUB_TOKEN }}
 
   build-and-upload:
     needs: release-please
@@ -49,23 +46,12 @@ jobs:
       with:
         targets: x86_64-pc-windows-msvc
 
-    - name: Cache cargo registry
-      uses: actions/cache@v3
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
       with:
-        path: ~/.cargo/registry
-        key: windows-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Cache cargo index
-      uses: actions/cache@v3
-      with:
-        path: ~/.cargo/git
-        key: windows-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Cache cargo build
-      uses: actions/cache@v3
-      with:
-        path: target
-        key: windows-x86_64-pc-windows-msvc-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+        prefix-key: "release"
+        cache-targets: true
+        save-if: true
 
     - name: Build release binary
       run: cargo build --release --target x86_64-pc-windows-msvc
@@ -75,7 +61,6 @@ jobs:
       with:
         tag_name: ${{ needs.release-please.outputs.tag_name }}
         files: target/x86_64-pc-windows-msvc/release/installer-analyzer.exe
+        fail_on_unmatched_files: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
