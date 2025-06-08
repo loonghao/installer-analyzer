@@ -1,7 +1,7 @@
 //! Cross-platform CLI output utilities
 
 use colored::*;
-use indicatif::{ProgressBar, ProgressStyle, ProgressState};
+use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use std::fmt::Write;
 use std::time::Duration;
 
@@ -81,13 +81,13 @@ impl CliOutput {
         let pb = ProgressBar::new(total);
         pb.set_style(
             ProgressStyle::with_template(
-                "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} {msg}"
+                "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} {msg}",
             )
             .unwrap()
             .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
                 write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()
             })
-            .progress_chars("#>-")
+            .progress_chars("#>-"),
         );
         pb.set_message(message.to_string());
         pb.enable_steady_tick(Duration::from_millis(120));
@@ -100,7 +100,7 @@ impl CliOutput {
         pb.set_style(
             ProgressStyle::with_template("{spinner:.green} {msg}")
                 .unwrap()
-                .tick_strings(&["⠁", "⠂", "⠄", "⡀", "⢀", "⠠", "⠐", "⠈"])
+                .tick_strings(&["⠁", "⠂", "⠄", "⡀", "⢀", "⠠", "⠐", "⠈"]),
         );
         pb.set_message(message.to_string());
         pb.enable_steady_tick(Duration::from_millis(120));
@@ -127,8 +127,11 @@ impl CliOutput {
         Self::section_header("Analysis Complete");
         Self::file_info("Report format", format);
         Self::folder_info("Report saved to", output_path);
-        Self::info(&format!("Analysis duration: {:.2}s", duration.as_secs_f64()));
-        
+        Self::info(&format!(
+            "Analysis duration: {:.2}s",
+            duration.as_secs_f64()
+        ));
+
         if let Some(count) = file_count {
             Self::info(&format!("Files analyzed: {}", count));
         }
@@ -138,13 +141,16 @@ impl CliOutput {
     pub fn batch_summary(processed: usize, failed: usize, total_duration: Duration) {
         Self::section_header("Batch Processing Complete");
         Self::success(&format!("Successfully processed: {}", processed));
-        
+
         if failed > 0 {
             Self::error(&format!("Failed to process: {}", failed));
         }
-        
-        Self::info(&format!("Total duration: {:.2}s", total_duration.as_secs_f64()));
-        
+
+        Self::info(&format!(
+            "Total duration: {:.2}s",
+            total_duration.as_secs_f64()
+        ));
+
         if processed > 0 {
             Self::info(&format!(
                 "Average time per file: {:.2}s",
@@ -158,7 +164,10 @@ impl CliOutput {
         println!();
         println!("{}", "Installer Analyzer".bold().cyan());
         println!("{}", format!("Version {}", version).dimmed());
-        println!("{}", "A comprehensive tool for analyzing software installation packages".dimmed());
+        println!(
+            "{}",
+            "A comprehensive tool for analyzing software installation packages".dimmed()
+        );
         println!();
     }
 
