@@ -10,7 +10,12 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 /// Handle the analyze command
-pub async fn handle_analyze(input: &Path, output: Option<&Path>, format: &str) -> Result<()> {
+pub async fn handle_analyze(
+    input: &Path,
+    output: Option<&Path>,
+    format: &str,
+    open_browser: bool,
+) -> Result<()> {
     tracing::info!("Starting static analysis of: {}", input.display());
 
     // Create analyzer
@@ -40,6 +45,7 @@ pub async fn handle_analyze(input: &Path, output: Option<&Path>, format: &str) -
     let report_format = parse_format(format)?;
 
     if let Some(output_path) = output {
+        let is_html = matches!(report_format, ReportFormat::Html);
         report_generator
             .save_report(&result, report_format, output_path)
             .await?;
@@ -47,6 +53,13 @@ pub async fn handle_analyze(input: &Path, output: Option<&Path>, format: &str) -
             "Analysis complete. Report saved to: {}",
             output_path.display()
         );
+
+        // Open browser if requested and format is HTML
+        if open_browser && is_html {
+            if let Err(e) = open_browser_to_file(output_path) {
+                eprintln!("Warning: Failed to open browser: {}", e);
+            }
+        }
     } else {
         let report_content = report_generator
             .generate_report(&result, report_format)
@@ -64,6 +77,7 @@ pub async fn handle_sandbox(
     format: &str,
     timeout: u64,
     enable_network: bool,
+    open_browser: bool,
 ) -> Result<()> {
     tracing::info!("Starting sandbox analysis of: {}", input.display());
 
@@ -85,6 +99,7 @@ pub async fn handle_sandbox(
     let report_format = parse_format(format)?;
 
     if let Some(output_path) = output {
+        let is_html = matches!(report_format, ReportFormat::Html);
         report_generator
             .save_report(&result, report_format, output_path)
             .await?;
@@ -92,6 +107,13 @@ pub async fn handle_sandbox(
             "Sandbox analysis complete. Report saved to: {}",
             output_path.display()
         );
+
+        // Open browser if requested and format is HTML
+        if open_browser && is_html {
+            if let Err(e) = open_browser_to_file(output_path) {
+                eprintln!("Warning: Failed to open browser: {}", e);
+            }
+        }
     } else {
         let report_content = report_generator
             .generate_report(&result, report_format)
@@ -148,9 +170,9 @@ pub async fn handle_batch(
         println!("Processing: {}", path.display());
 
         let result = if use_sandbox {
-            handle_sandbox(&path, Some(&output_file), format, 300, false).await
+            handle_sandbox(&path, Some(&output_file), format, 300, false, false).await
         } else {
-            handle_analyze(&path, Some(&output_file), format).await
+            handle_analyze(&path, Some(&output_file), format, false).await
         };
 
         match result {
@@ -262,4 +284,19 @@ fn is_supported_file(path: &Path) -> bool {
     } else {
         false
     }
+}
+
+/// Open browser to view the generated HTML report
+fn open_browser_to_file(file_path: &Path) -> Result<()> {
+    let absolute_path = file_path.canonicalize().map_err(|e| {
+        AnalyzerError::file_not_found(format!("Failed to get absolute path: {}", e))
+    })?;
+
+    let url = format!("file://{}", absolute_path.display());
+
+    open::that(&url)
+        .map_err(|e| AnalyzerError::config_error(format!("Failed to open browser: {}", e)))?;
+
+    println!("Opening report in browser: {}", url);
+    Ok(())
 }

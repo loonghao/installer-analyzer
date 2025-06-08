@@ -30,29 +30,19 @@ jobs:
         toolchain: ${{ matrix.rust }}
         components: rustfmt, clippy
 
-    - name: Cache cargo registry
-      uses: actions/cache@v3
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
       with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-registry-
-
-    - name: Cache cargo index
-      uses: actions/cache@v3
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-index-
-
-    - name: Cache cargo build
-      uses: actions/cache@v3
-      with:
-        path: target
-        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-build-target-
+        # Cache key prefix for this job
+        prefix-key: "ci"
+        # Additional cache key components
+        key: ${{ matrix.os }}-${{ matrix.rust }}
+        # Cache target directory
+        cache-targets: true
+        # Cache cargo registry
+        cache-all-crates: true
+        # Save cache even on failure
+        save-if: true
 
     - name: Check formatting
       run: cargo fmt --all -- --check
@@ -63,8 +53,27 @@ jobs:
     - name: Install nightly toolchain for udeps
       uses: dtolnay/rust-toolchain@nightly
 
-    - name: Install cargo-udeps
-      run: cargo install cargo-udeps
+    - name: Cache cargo tools
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/bin
+        key: ${{ runner.os }}-cargo-tools-udeps-v1
+        restore-keys: |
+          ${{ runner.os }}-cargo-tools-
+
+    - name: Install cargo-binstall
+      shell: bash
+      run: |
+        if ! command -v cargo-binstall &> /dev/null; then
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+        fi
+
+    - name: Install cargo-udeps (fast binary install)
+      shell: bash
+      run: |
+        if ! command -v cargo-udeps &> /dev/null; then
+          cargo binstall --no-confirm cargo-udeps
+        fi
 
     - name: Check for unused dependencies
       run: cargo +nightly udeps --all-targets
@@ -104,8 +113,34 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
 
-    - name: Install cargo-audit
-      run: cargo install cargo-audit
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        prefix-key: "security"
+        cache-targets: false
+        save-if: true
+
+    - name: Cache cargo tools
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/bin
+        key: ${{ runner.os }}-cargo-tools-audit-v1
+        restore-keys: |
+          ${{ runner.os }}-cargo-tools-
+
+    - name: Install cargo-binstall
+      shell: bash
+      run: |
+        if ! command -v cargo-binstall &> /dev/null; then
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+        fi
+
+    - name: Install cargo-audit (fast binary install)
+      shell: bash
+      run: |
+        if ! command -v cargo-audit &> /dev/null; then
+          cargo binstall --no-confirm cargo-audit
+        fi
 
     - name: Run security audit
       run: cargo audit
@@ -122,8 +157,34 @@ jobs:
       with:
         components: llvm-tools-preview
 
-    - name: Install cargo-llvm-cov
-      run: cargo install cargo-llvm-cov
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        prefix-key: "coverage"
+        cache-targets: false
+        save-if: true
+
+    - name: Cache cargo tools
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/bin
+        key: ${{ runner.os }}-cargo-tools-llvm-cov-v1
+        restore-keys: |
+          ${{ runner.os }}-cargo-tools-
+
+    - name: Install cargo-binstall
+      shell: bash
+      run: |
+        if ! command -v cargo-binstall &> /dev/null; then
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+        fi
+
+    - name: Install cargo-llvm-cov (fast binary install)
+      shell: bash
+      run: |
+        if ! command -v cargo-llvm-cov &> /dev/null; then
+          cargo binstall --no-confirm cargo-llvm-cov
+        fi
 
     - name: Generate coverage
       run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info

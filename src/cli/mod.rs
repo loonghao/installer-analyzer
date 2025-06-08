@@ -38,6 +38,10 @@ pub enum Commands {
         /// Output format (json, html, markdown)
         #[arg(short, long, default_value = "json")]
         format: String,
+
+        /// Automatically open HTML report in browser
+        #[arg(long)]
+        open: bool,
     },
 
     /// Run installer in sandbox for dynamic analysis
@@ -61,6 +65,10 @@ pub enum Commands {
         /// Enable network monitoring
         #[arg(short, long)]
         network: bool,
+
+        /// Automatically open HTML report in browser
+        #[arg(long)]
+        open: bool,
     },
 
     /// Batch process multiple installers
