@@ -9,6 +9,8 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: read
+  repository-projects: read
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -32,6 +34,10 @@ jobs:
           release-type: rust
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-github-release: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: false
 
   build-and-upload:
     needs: release-please
