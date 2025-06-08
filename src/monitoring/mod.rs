@@ -22,6 +22,12 @@ pub struct FileSystemMonitor {
     operations: Vec<FileOperation>,
 }
 
+impl Default for FileSystemMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FileSystemMonitor {
     pub fn new() -> Self {
         Self {
@@ -58,6 +64,12 @@ impl SystemMonitor for FileSystemMonitor {
 pub struct RegistryMonitor {
     active: bool,
     operations: Vec<RegistryOperation>,
+}
+
+impl Default for RegistryMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl RegistryMonitor {

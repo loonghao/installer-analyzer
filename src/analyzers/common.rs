@@ -37,7 +37,7 @@ pub async fn validate_file(file_path: &Path) -> Result<()> {
     let mut file = tokio::fs::File::open(file_path).await?;
     let mut buffer = [0u8; 4];
     use tokio::io::AsyncReadExt;
-    file.read(&mut buffer).await?;
+    let _ = file.read(&mut buffer).await?;
 
     Ok(())
 }

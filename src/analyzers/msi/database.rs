@@ -30,7 +30,7 @@ impl MsiDatabase {
         unsafe {
             let result = MsiOpenDatabaseW(
                 PCWSTR(path_wide.as_ptr()),
-                PCWSTR(MSIDBOPEN_READONLY.0 as *const u16),
+                PCWSTR(MSIDBOPEN_READONLY.0),
                 &mut handle,
             );
 
