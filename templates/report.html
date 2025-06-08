@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installer Analysis Report - {{metadata.product_name}}</title>
+    
+    <!-- CDN Dependencies -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --dark-color: #1e293b;
+        }
+        
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 12px 12px 0 0 !important;
+        }
+        
+        .badge-custom {
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+        }
+        
+        .file-tree {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #ffffff;
+        }
+
+        .file-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s;
+        }
+
+        .file-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Enhanced File Tree Styles */
+        .file-tree-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #ffffff;
+            overflow: hidden;
+        }
+
+        .file-tree-header {
+            background: #f8fafc;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .file-tree-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .file-tree-search {
+            flex: 1;
+            max-width: 300px;
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+
+        .file-tree-body {
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .tree-node {
+            margin: 2px 0;
+        }
+
+        .tree-node-content {
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            user-select: none;
+        }
+
+        .tree-node-content:hover {
+            background-color: #f3f4f6;
+        }
+
+        .tree-node-content.selected {
+            background-color: #dbeafe;
+        }
+
+        .tree-node-indent {
+            width: 20px;
+            display: inline-block;
+        }
+
+        .tree-node-toggle {
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 4px;
+            cursor: pointer;
+            border-radius: 2px;
+            font-size: 12px;
+        }
+
+        .tree-node-toggle:hover {
+            background-color: #e5e7eb;
+        }
+
+        .tree-node-toggle.expanded::before {
+            content: "▼";
+        }
+
+        .tree-node-toggle.collapsed::before {
+            content: "▶";
+        }
+
+        .tree-node-toggle.leaf {
+            visibility: hidden;
+        }
+
+        .tree-node-icon {
+            margin-right: 8px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .tree-node-label {
+            flex: 1;
+            font-size: 0.875rem;
+        }
+
+        .tree-node-size {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-left: 8px;
+        }
+
+        .tree-node-children {
+            margin-left: 20px;
+        }
+
+        .tree-node-children.collapsed {
+            display: none;
+        }
+
+        .file-tree-stats {
+            padding: 8px 16px;
+            background: #f9fafb;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .progress-custom {
+            height: 8px;
+            border-radius: 4px;
+        }
+        
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background-color: #f8fafc;
+            border-color: #e2e8f0;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .collapsible-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .metric-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-label {
+            color: var(--secondary-color);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .code-hash {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-shield-alt me-2"></i>
+                Installer Analysis Report
+            </span>
+            <span class="navbar-text">
+                <i class="fas fa-clock me-1"></i>
+                Generated: {{analyzed_at}}
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title mb-0">
+                            <i class="fas fa-box me-2"></i>
+                            {{metadata.product_name}}
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Product Name:</strong></td>
+                                        <td>{{metadata.product_name}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Version:</strong></td>
+                                        <td>{{metadata.product_version}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Manufacturer:</strong></td>
+                                        <td>{{metadata.manufacturer}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Format:</strong></td>
+                                        <td><span class="badge bg-primary">{{metadata.format}}</span></td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>File Size:</strong></td>
+                                        <td>{{metadata.file_size_formatted}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>File Hash:</strong></td>
+                                        <td><span class="code-hash">{{metadata.file_hash_short}}</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Analysis Type:</strong></td>
+                                        <td>
+                                            <span class="badge {{analysis_type_class}}">
+                                                <i class="fas {{analysis_type_icon}} me-1"></i>
+                                                {{analysis_type_text}}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Duration:</strong></td>
+                                        <td>{{analysis_duration_formatted}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Analysis Summary
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-primary">{{summary.total_files}}</div>
+                                    <div class="metric-label">Total Files</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-success">{{summary.registry_operations}}</div>
+                                    <div class="metric-label">Registry Operations</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-warning">{{summary.executables}}</div>
+                                    <div class="metric-label">Executables</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-info">{{summary.total_size_formatted}}</div>
+                                    <div class="metric-label">Total Size</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <canvas id="fileSizeChart" width="400" height="200"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Analysis Progress</h5>
+                                <div class="mb-2">
+                                    <small>File Analysis</small>
+                                    <div class="progress progress-custom">
+                                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <small>Registry Analysis</small>
+                                    <div class="progress progress-custom">
+                                        <div class="progress-bar bg-info" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <small>Security Scan</small>
+                                    <div class="progress progress-custom">
+                                        <div class="progress-bar bg-warning" style="width: 85%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Files Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-folder-open me-2"></i>
+                            File Structure ({{file_tree.total_files}} files, {{file_tree.total_directories}} directories)
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- File Tree Container -->
+                        <div class="file-tree-container">
+                            <div class="file-tree-header">
+                                <div class="file-tree-controls">
+                                    <input type="text" class="file-tree-search" id="fileTreeSearch" placeholder="Search files...">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="expandAllNodes()">
+                                        <i class="fas fa-expand-arrows-alt"></i> Expand All
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="collapseAllNodes()">
+                                        <i class="fas fa-compress-arrows-alt"></i> Collapse All
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="file-tree-body" id="fileTreeBody">
+                                <!-- Tree nodes will be rendered by JavaScript -->
+                            </div>
+                            <div class="file-tree-stats">
+                                <i class="fas fa-info-circle me-1"></i>
+                                {{file_tree.total_files}} files in {{file_tree.total_directories}} directories
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legacy File Groups (Collapsed by default) -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <button class="btn btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#legacyFileGroups">
+                                <i class="fas fa-list me-2"></i>
+                                File Groups (Legacy View)
+                            </button>
+                        </h3>
+                    </div>
+                    <div class="collapse" id="legacyFileGroups">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-cog me-2"></i>Executables ({{file_groups.executables.count}})</h5>
+                                    <div class="file-tree">
+                                        {{#each file_groups.executables.files}}
+                                        <div class="file-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-cog text-danger me-2"></i>
+                                                    <span class="fw-medium">{{this.name}}</span>
+                                                </div>
+                                                <small class="text-muted">{{this.size_formatted}}</small>
+                                            </div>
+                                        </div>
+                                        {{/each}}
+                                        {{#if file_groups.executables.has_more}}
+                                        <div class="file-item text-center text-muted">
+                                            <small>... and {{file_groups.executables.remaining}} more files</small>
+                                        </div>
+                                        {{/if}}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-book me-2"></i>Libraries ({{file_groups.libraries.count}})</h5>
+                                    <div class="file-tree">
+                                        {{#each file_groups.libraries.files}}
+                                        <div class="file-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-book text-primary me-2"></i>
+                                                    <span class="fw-medium">{{this.name}}</span>
+                                                </div>
+                                                <small class="text-muted">{{this.size_formatted}}</small>
+                                            </div>
+                                        </div>
+                                        {{/each}}
+                                        {{#if file_groups.libraries.has_more}}
+                                        <div class="file-item text-center text-muted">
+                                            <small>... and {{file_groups.libraries.remaining}} more files</small>
+                                        </div>
+                                        {{/if}}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registry Section -->
+        {{#if registry_operations}}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-database me-2"></i>
+                            Registry Operations ({{summary.registry_operations}} operations)
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Operation</th>
+                                        <th>Key Path</th>
+                                        <th>Value Name</th>
+                                        <th>Value Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{#each registry_operations}}
+                                    <tr>
+                                        <td><span class="badge {{this.operation_class}}">{{this.operation_text}}</span></td>
+                                        <td><code>{{this.key_path}}</code></td>
+                                        <td>{{this.value_name}}</td>
+                                        <td>{{this.value_data}}</td>
+                                    </tr>
+                                    {{/each}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Security Analysis Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            Security Analysis
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card border-{{security.risk_level_class}} h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas {{security.risk_icon}} fa-3x text-{{security.risk_level_class}} mb-3"></i>
+                                        <h5>Risk Level</h5>
+                                        <span class="badge bg-{{security.risk_level_class}} fs-6">{{security.risk_level_text}}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <h5>Security Metrics</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled">
+                                            <li><strong>Executable Files:</strong> {{security.executable_count}}</li>
+                                            <li><strong>Large Files (>50MB):</strong> {{security.large_files}}</li>
+                                            <li><strong>Total Package Size:</strong> {{security.total_size_formatted}}</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled">
+                                            <li><strong>Registry Operations:</strong> {{security.registry_operations}}</li>
+                                            <li><strong>Dynamic Analysis:</strong> {{security.dynamic_analysis}}</li>
+                                            <li><strong>File Modifications:</strong> {{security.file_modifications}}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center py-4 text-muted">
+            <p>Report generated by Installer Analyzer v{{version}} | Session ID: {{session_id}}</p>
+        </footer>
+    </div>
+
+    <!-- Tree Node Template -->
+    <script id="tree-node-template" type="text/x-handlebars-template">
+        <div class="tree-node" data-path="{{path}}" data-type="{{file_type}}">
+            <div class="tree-node-content" onclick="toggleNode(this)">
+                <!-- Indentation will be handled by JavaScript -->
+                <span class="tree-node-toggle {{#if is_directory}}{{#if children}}collapsed{{else}}leaf{{/if}}{{else}}leaf{{/if}}"></span>
+                <span class="tree-node-icon">
+                    <i class="{{icon_class}}"></i>
+                </span>
+                <span class="tree-node-label">{{name}}</span>
+                <span class="tree-node-size">{{size_formatted}}</span>
+            </div>
+            {{#if children}}
+            <div class="tree-node-children collapsed">
+                {{#each children}}
+                    {{> tree_node}}
+                {{/each}}
+            </div>
+            {{/if}}
+        </div>
+    </script>
+
+    <!-- CDN Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.min.js"></script>
+    
+    <script>
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // File size chart
+        const ctx = document.getElementById('fileSizeChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Executables', 'Libraries', 'Resources', 'Documentation', 'Other'],
+                    datasets: [{
+                        data: {{{chart_data}}},
+                        backgroundColor: [
+                            '#ef4444',
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#6b7280'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // File Tree Functionality
+        function toggleNode(element) {
+            const treeNode = element.closest('.tree-node');
+            const toggle = element.querySelector('.tree-node-toggle');
+            const children = treeNode.querySelector('.tree-node-children');
+
+            if (children && !toggle.classList.contains('leaf')) {
+                if (toggle.classList.contains('collapsed')) {
+                    toggle.classList.remove('collapsed');
+                    toggle.classList.add('expanded');
+                    children.classList.remove('collapsed');
+                } else {
+                    toggle.classList.remove('expanded');
+                    toggle.classList.add('collapsed');
+                    children.classList.add('collapsed');
+                }
+            }
+
+            // Update selection
+            document.querySelectorAll('.tree-node-content.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            element.classList.add('selected');
+        }
+
+        function expandAllNodes() {
+            document.querySelectorAll('.tree-node-toggle.collapsed').forEach(toggle => {
+                toggle.classList.remove('collapsed');
+                toggle.classList.add('expanded');
+            });
+            document.querySelectorAll('.tree-node-children.collapsed').forEach(children => {
+                children.classList.remove('collapsed');
+            });
+        }
+
+        function collapseAllNodes() {
+            document.querySelectorAll('.tree-node-toggle.expanded').forEach(toggle => {
+                toggle.classList.remove('expanded');
+                toggle.classList.add('collapsed');
+            });
+            document.querySelectorAll('.tree-node-children').forEach(children => {
+                children.classList.add('collapsed');
+            });
+        }
+
+        // File Tree Search
+        document.getElementById('fileTreeSearch')?.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const treeNodes = document.querySelectorAll('.tree-node');
+
+            treeNodes.forEach(node => {
+                const label = node.querySelector('.tree-node-label')?.textContent.toLowerCase() || '';
+                const path = node.dataset.path?.toLowerCase() || '';
+
+                if (searchTerm === '' || label.includes(searchTerm) || path.includes(searchTerm)) {
+                    node.style.display = '';
+                    // Show parent nodes
+                    let parent = node.parentElement;
+                    while (parent && parent.classList.contains('tree-node-children')) {
+                        parent.style.display = '';
+                        parent.classList.remove('collapsed');
+                        const parentToggle = parent.parentElement?.querySelector('.tree-node-toggle');
+                        if (parentToggle) {
+                            parentToggle.classList.remove('collapsed');
+                            parentToggle.classList.add('expanded');
+                        }
+                        parent = parent.parentElement?.parentElement;
+                    }
+                } else {
+                    node.style.display = 'none';
+                }
+            });
+        });
+
+        // File tree data (injected by template)
+        const fileTreeData = {{{file_tree_json}}};
+
+        // Render tree node
+        function renderTreeNode(node, depth = 0) {
+            const hasChildren = node.children && node.children.length > 0;
+            const toggleClass = hasChildren ? 'collapsed' : 'leaf';
+            const indentSpans = '    '.repeat(depth);
+
+            let html = `
+                <div class="tree-node" data-path="${node.path}" data-type="${node.file_type}">
+                    <div class="tree-node-content" onclick="toggleNode(this)" style="padding-left: ${depth * 20}px;">
+                        <span class="tree-node-toggle ${toggleClass}"></span>
+                        <span class="tree-node-icon">
+                            <i class="${node.icon_class}"></i>
+                        </span>
+                        <span class="tree-node-label">${node.name}</span>
+                        <span class="tree-node-size">${node.size_formatted}</span>
+                    </div>`;
+
+            if (hasChildren) {
+                html += `<div class="tree-node-children collapsed">`;
+                node.children.forEach(child => {
+                    html += renderTreeNode(child, depth + 1);
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        // Initialize file tree
+        document.addEventListener('DOMContentLoaded', function() {
+            // Render file tree
+            const fileTreeBody = document.getElementById('fileTreeBody');
+            if (fileTreeBody && fileTreeData && fileTreeData.nodes) {
+                let html = '';
+                fileTreeData.nodes.forEach(node => {
+                    html += renderTreeNode(node);
+                });
+                fileTreeBody.innerHTML = html;
+
+                // Auto-expand first level directories
+                document.querySelectorAll('.tree-node').forEach(node => {
+                    const depth = node.dataset.path?.split(/[/\\]/).length || 1;
+                    if (depth <= 2) { // Expand first two levels
+                        const toggle = node.querySelector('.tree-node-toggle');
+                        const children = node.querySelector('.tree-node-children');
+                        if (toggle && children && !toggle.classList.contains('leaf')) {
+                            toggle.classList.remove('collapsed');
+                            toggle.classList.add('expanded');
+                            children.classList.remove('collapsed');
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

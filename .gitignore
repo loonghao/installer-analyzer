@@ -29,11 +29,13 @@ ehthumbs.db
 Thumbs.db
 
 # Test output files
-*.html
 *.json
 test_*_report.html
 *-report.html
 *-analysis.json
+
+# Exclude template files from ignore
+!templates/*.html
 
 # Temporary files
 *.tmp
