@@ -69,3 +69,5 @@ colored = "2.0"         # Cross-platform colored terminal text
 
 [dev-dependencies]
 tempfile = "3.0"
+tokio-test = "0.4"
+futures = "0.3"
