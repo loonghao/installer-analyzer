@@ -1,7 +1,7 @@
 //! Report generator implementation using templates
 
 use crate::core::{AnalysisResult, AnalyzerError, Result};
-use crate::reporting::templates::{ReportTemplateData, get_report_template};
+use crate::reporting::templates::{get_report_template, ReportTemplateData};
 use crate::reporting::{ReportFormat, Reporter};
 use handlebars::Handlebars;
 use std::path::Path;
