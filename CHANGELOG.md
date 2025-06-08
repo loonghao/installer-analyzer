@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0](https://github.com/loonghao/installer-analyzer/compare/v0.2.0...v0.3.0) (2025-06-08)
+
+
+### Features
+
+* add comprehensive code coverage analysis and improvement plan ([d31c39b](https://github.com/loonghao/installer-analyzer/commit/d31c39bde0850d27f1161d838bf526506d97411a))
+* enhance CLI with cross-platform output and progress bars ([83c5064](https://github.com/loonghao/installer-analyzer/commit/83c50644743812ff57e1e0b407fcac4a2dbfb017))
+
+
+### Bug Fixes
+
+* optimize CI performance and resolve dependency issues ([a38545e](https://github.com/loonghao/installer-analyzer/commit/a38545ede646dfa9d0baae77b7b28aa18a218e52))
+* resolve all clippy warnings for CI compliance ([1243d4d](https://github.com/loonghao/installer-analyzer/commit/1243d4dfe21b86c5a826c1358b38a874ab0ea3ec))
+
 ## [0.2.0](https://github.com/loonghao/installer-analyzer/compare/v0.1.0...v0.2.0) (2025-06-08)
 
 
