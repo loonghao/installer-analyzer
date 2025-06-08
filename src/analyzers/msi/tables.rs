@@ -1,10 +1,12 @@
 //! MSI database table structures and queries
 
-use crate::core::{Result, FileEntry, RegistryOperation, RegistryValue, RegistryValueType, FileAttributes};
 use crate::analyzers::msi::database::MsiDatabase;
-use std::path::PathBuf;
-use std::collections::HashMap;
+use crate::core::{
+    FileAttributes, FileEntry, RegistryOperation, RegistryValue, RegistryValueType, Result,
+};
 use chrono::Utc;
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 /// MSI Property table entry
 #[derive(Debug, Clone)]
@@ -53,15 +55,15 @@ impl MsiTables {
     pub fn query_properties(db: &MsiDatabase) -> Result<Vec<PropertyEntry>> {
         let view = db.execute_query("SELECT `Property`, `Value` FROM `Property`")?;
         let records = view.collect_records()?;
-        
+
         let mut properties = Vec::new();
         for record in records {
             let property = record.get_string(1)?;
             let value = record.get_string(2)?;
-            
+
             properties.push(PropertyEntry { property, value });
         }
-        
+
         Ok(properties)
     }
 
@@ -70,19 +72,39 @@ impl MsiTables {
         let query = "SELECT `File`, `Component_`, `FileName`, `FileSize`, `Version`, `Language`, `Attributes`, `Sequence` FROM `File`";
         let view = db.execute_query(query)?;
         let records = view.collect_records()?;
-        
+
         let mut files = Vec::new();
         for record in records {
             let file = record.get_string(1)?;
             let component = record.get_string(2)?;
             let filename = record.get_string(3)?;
-            
-            let file_size = if record.is_null(4) { None } else { Some(record.get_integer(4)?) };
-            let version = if record.is_null(5) { None } else { Some(record.get_string(5)?) };
-            let language = if record.is_null(6) { None } else { Some(record.get_string(6)?) };
-            let attributes = if record.is_null(7) { None } else { Some(record.get_integer(7)?) };
-            let sequence = if record.is_null(8) { None } else { Some(record.get_integer(8)?) };
-            
+
+            let file_size = if record.is_null(4) {
+                None
+            } else {
+                Some(record.get_integer(4)?)
+            };
+            let version = if record.is_null(5) {
+                None
+            } else {
+                Some(record.get_string(5)?)
+            };
+            let language = if record.is_null(6) {
+                None
+            } else {
+                Some(record.get_string(6)?)
+            };
+            let attributes = if record.is_null(7) {
+                None
+            } else {
+                Some(record.get_integer(7)?)
+            };
+            let sequence = if record.is_null(8) {
+                None
+            } else {
+                Some(record.get_integer(8)?)
+            };
+
             files.push(FileTableEntry {
                 file,
                 component,
@@ -94,7 +116,7 @@ impl MsiTables {
                 sequence,
             });
         }
-        
+
         Ok(files)
     }
 
@@ -103,38 +125,51 @@ impl MsiTables {
         let query = "SELECT `Directory`, `Directory_Parent`, `DefaultDir` FROM `Directory`";
         let view = db.execute_query(query)?;
         let records = view.collect_records()?;
-        
+
         let mut directories = Vec::new();
         for record in records {
             let directory = record.get_string(1)?;
-            let directory_parent = if record.is_null(2) { None } else { Some(record.get_string(2)?) };
+            let directory_parent = if record.is_null(2) {
+                None
+            } else {
+                Some(record.get_string(2)?)
+            };
             let default_dir = record.get_string(3)?;
-            
+
             directories.push(DirectoryEntry {
                 directory,
                 directory_parent,
                 default_dir,
             });
         }
-        
+
         Ok(directories)
     }
 
     /// Query the Registry table
     pub fn query_registry(db: &MsiDatabase) -> Result<Vec<RegistryEntry>> {
-        let query = "SELECT `Registry`, `Root`, `Key`, `Name`, `Value`, `Component_` FROM `Registry`";
+        let query =
+            "SELECT `Registry`, `Root`, `Key`, `Name`, `Value`, `Component_` FROM `Registry`";
         let view = db.execute_query(query)?;
         let records = view.collect_records()?;
-        
+
         let mut registry_entries = Vec::new();
         for record in records {
             let registry = record.get_string(1)?;
             let root = record.get_integer(2)?;
             let key = record.get_string(3)?;
-            let name = if record.is_null(4) { None } else { Some(record.get_string(4)?) };
-            let value = if record.is_null(5) { None } else { Some(record.get_string(5)?) };
+            let name = if record.is_null(4) {
+                None
+            } else {
+                Some(record.get_string(4)?)
+            };
+            let value = if record.is_null(5) {
+                None
+            } else {
+                Some(record.get_string(5)?)
+            };
             let component = record.get_string(6)?;
-            
+
             registry_entries.push(RegistryEntry {
                 registry,
                 root,
@@ -144,7 +179,7 @@ impl MsiTables {
                 component,
             });
         }
-        
+
         Ok(registry_entries)
     }
 
@@ -155,32 +190,36 @@ impl MsiTables {
     ) -> Vec<FileEntry> {
         // Build directory path mapping
         let mut dir_map: HashMap<String, String> = HashMap::new();
-        
+
         // First pass: collect all directories
         for dir in &directories {
             dir_map.insert(dir.directory.clone(), dir.default_dir.clone());
         }
-        
+
         // Second pass: resolve full paths (simplified)
         let mut file_entries = Vec::new();
         for file in files {
             // Parse filename (may contain | separator for short|long names)
             let display_name = if file.filename.contains('|') {
-                file.filename.split('|').nth(1).unwrap_or(&file.filename).to_string()
+                file.filename
+                    .split('|')
+                    .nth(1)
+                    .unwrap_or(&file.filename)
+                    .to_string()
             } else {
                 file.filename.clone()
             };
-            
+
             let path = PathBuf::from(&display_name);
             let target_path = Some(PathBuf::from(format!("TARGETDIR\\{}", display_name)));
-            
+
             let attributes = FileAttributes {
                 readonly: file.attributes.map_or(false, |a| a & 1 != 0),
                 hidden: file.attributes.map_or(false, |a| a & 2 != 0),
                 system: file.attributes.map_or(false, |a| a & 4 != 0),
                 executable: display_name.ends_with(".exe") || display_name.ends_with(".dll"),
             };
-            
+
             file_entries.push(FileEntry {
                 path,
                 target_path,
@@ -190,22 +229,22 @@ impl MsiTables {
                 compression: Some("CAB".to_string()),
             });
         }
-        
+
         file_entries
     }
 
     /// Convert MSI registry entries to our RegistryOperation format
     pub fn convert_to_registry_operations(entries: Vec<RegistryEntry>) -> Vec<RegistryOperation> {
         let mut operations = Vec::new();
-        
+
         for entry in entries {
             let key_path = Self::format_registry_key(entry.root, &entry.key);
-            
+
             if let Some(name) = entry.name {
                 if let Some(value_str) = entry.value {
                     // Determine value type and parse value
                     let (value_type, value_data) = Self::parse_registry_value(&value_str);
-                    
+
                     operations.push(RegistryOperation::SetValue {
                         key_path,
                         value_name: name,
@@ -222,23 +261,23 @@ impl MsiTables {
                 });
             }
         }
-        
+
         operations
     }
 
     /// Format registry key path from root and key
     fn format_registry_key(root: i32, key: &str) -> String {
         let root_name = match root {
-            -2147483648 => "HKEY_CLASSES_ROOT", // HKCR
-            -2147483647 => "HKEY_CURRENT_USER", // HKCU
-            -2147483646 => "HKEY_LOCAL_MACHINE", // HKLM
-            -2147483645 => "HKEY_USERS", // HKU
+            -2147483648 => "HKEY_CLASSES_ROOT",     // HKCR
+            -2147483647 => "HKEY_CURRENT_USER",     // HKCU
+            -2147483646 => "HKEY_LOCAL_MACHINE",    // HKLM
+            -2147483645 => "HKEY_USERS",            // HKU
             -2147483644 => "HKEY_PERFORMANCE_DATA", // HKPD
-            -2147483643 => "HKEY_CURRENT_CONFIG", // HKCC
-            -2147483642 => "HKEY_DYN_DATA", // HKDD
+            -2147483643 => "HKEY_CURRENT_CONFIG",   // HKCC
+            -2147483642 => "HKEY_DYN_DATA",         // HKDD
             _ => "UNKNOWN_ROOT",
         };
-        
+
         format!("{}\\{}", root_name, key)
     }
 
@@ -257,8 +296,11 @@ impl MsiTables {
                 return (RegistryValueType::DWord, RegistryValue::DWord(dword));
             }
         }
-        
+
         // Default to string
-        (RegistryValueType::String, RegistryValue::String(value_str.to_string()))
+        (
+            RegistryValueType::String,
+            RegistryValue::String(value_str.to_string()),
+        )
     }
 }

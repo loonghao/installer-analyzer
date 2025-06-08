@@ -1,13 +1,13 @@
 //! Squirrel analyzer implementation
 
-use crate::core::{Result, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
-use crate::analyzers::{InstallerAnalyzer, NsisAnalyzer, common};
+use crate::analyzers::{common, InstallerAnalyzer, NsisAnalyzer};
+use crate::core::{FileEntry, InstallerFormat, InstallerMetadata, RegistryOperation, Result};
 use async_trait::async_trait;
-use std::path::Path;
 use chrono::Utc;
+use std::path::Path;
 
 /// Squirrel installer analyzer
-/// 
+///
 /// Squirrel is used by Electron applications for auto-updating.
 /// It typically uses NSIS as the underlying installer technology.
 pub struct SquirrelAnalyzer {
@@ -60,60 +60,58 @@ impl SquirrelAnalyzer {
     async fn extract_squirrel_metadata(&self, file_path: &Path) -> Result<InstallerMetadata> {
         // Start with base NSIS metadata
         let mut metadata = self.nsis_analyzer.extract_metadata(file_path).await?;
-        
+
         // Override format to Squirrel
         metadata.format = InstallerFormat::Squirrel;
-        
+
         // Add Squirrel-specific properties
         let squirrel_properties = self.extract_squirrel_properties(file_path).await?;
         metadata.properties.extend(squirrel_properties);
-        
+
         Ok(metadata)
     }
 
     /// Extract Squirrel-specific properties
-    async fn extract_squirrel_properties(&self, file_path: &Path) -> Result<std::collections::HashMap<String, String>> {
+    async fn extract_squirrel_properties(
+        &self,
+        file_path: &Path,
+    ) -> Result<std::collections::HashMap<String, String>> {
         let mut properties = std::collections::HashMap::new();
-        
+
         // Detect Electron version
         let electron_version = self.detect_electron_version(file_path).await?;
         if let Some(version) = electron_version {
             properties.insert("electron_version".to_string(), version);
         }
-        
+
         // Detect Squirrel version/type
         let squirrel_type = self.detect_squirrel_type(file_path).await?;
         if let Some(sq_type) = squirrel_type {
             properties.insert("squirrel_type".to_string(), sq_type);
         }
-        
+
         // Detect update mechanism
         let update_mechanism = self.detect_update_mechanism(file_path).await?;
         if let Some(mechanism) = update_mechanism {
             properties.insert("update_mechanism".to_string(), mechanism);
         }
-        
+
         // Detect app framework
         let framework = self.detect_app_framework(file_path).await?;
         if let Some(fw) = framework {
             properties.insert("app_framework".to_string(), fw);
         }
-        
+
         properties.insert("installer_type".to_string(), "Squirrel".to_string());
         properties.insert("base_technology".to_string(), "NSIS".to_string());
         properties.insert("app_type".to_string(), "Electron Application".to_string());
-        
+
         Ok(properties)
     }
 
     /// Detect Electron version
     async fn detect_electron_version(&self, file_path: &Path) -> Result<Option<String>> {
-        let version_patterns = [
-            "Electron/",
-            "electron-v",
-            "electron@",
-            "\"electron\":",
-        ];
+        let version_patterns = ["Electron/", "electron-v", "electron@", "\"electron\":"];
 
         // This is a simplified detection - in reality, you'd need to parse
         // the package.json or version info from the embedded resources
@@ -193,7 +191,7 @@ impl SquirrelAnalyzer {
     async fn extract_squirrel_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         // Start with NSIS file extraction
         let mut files = self.nsis_analyzer.extract_files(file_path).await?;
-        
+
         // Add common Squirrel/Electron files that might be present
         let squirrel_files = [
             ("Update.exe", 1024 * 1024, true),
@@ -209,7 +207,10 @@ impl SquirrelAnalyzer {
         for (filename, size, executable) in &squirrel_files {
             files.push(FileEntry {
                 path: std::path::PathBuf::from(filename),
-                target_path: Some(std::path::PathBuf::from(format!("C:\\Users\\[Username]\\AppData\\Local\\[AppName]\\{}", filename))),
+                target_path: Some(std::path::PathBuf::from(format!(
+                    "C:\\Users\\[Username]\\AppData\\Local\\[AppName]\\{}",
+                    filename
+                ))),
                 size: *size,
                 hash: None,
                 attributes: crate::core::FileAttributes {
@@ -228,8 +229,11 @@ impl SquirrelAnalyzer {
     /// Extract Squirrel-specific registry operations
     async fn extract_squirrel_registry(&self, file_path: &Path) -> Result<Vec<RegistryOperation>> {
         // Start with NSIS registry operations
-        let mut operations = self.nsis_analyzer.extract_registry_operations(file_path).await?;
-        
+        let mut operations = self
+            .nsis_analyzer
+            .extract_registry_operations(file_path)
+            .await?;
+
         // Add common Squirrel registry entries
         let squirrel_registry_ops = [
             ("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\[AppId]", "DisplayName"),
@@ -272,21 +276,24 @@ impl InstallerAnalyzer for SquirrelAnalyzer {
     async fn extract_metadata(&self, file_path: &Path) -> Result<InstallerMetadata> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_squirrel_metadata(file_path).await
     }
 
     async fn extract_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_squirrel_files(file_path).await
     }
 
-    async fn extract_registry_operations(&self, file_path: &Path) -> Result<Vec<RegistryOperation>> {
+    async fn extract_registry_operations(
+        &self,
+        file_path: &Path,
+    ) -> Result<Vec<RegistryOperation>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_squirrel_registry(file_path).await
     }
 }

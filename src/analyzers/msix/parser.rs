@@ -1,10 +1,10 @@
 //! MSIX/AppX data structure parser
 
-use crate::core::{Result, AnalyzerError, FileEntry};
-use crate::analyzers::archive::{ArchiveParser, ArchiveFormat};
-use std::path::Path;
+use crate::analyzers::archive::{ArchiveFormat, ArchiveParser};
+use crate::core::{AnalyzerError, FileEntry, Result};
 use std::collections::HashMap;
 use std::io::Read;
+use std::path::Path;
 use zip::ZipArchive;
 
 /// MSIX/AppX dependency information
@@ -80,26 +80,30 @@ impl MsixParser {
 
         // Look for AppxManifest.xml in the root
         for i in 0..archive.len() {
-            let mut zip_file = archive.by_index(i)
-                .map_err(|e| AnalyzerError::generic(format!("Failed to read zip entry {}: {}", i, e)))?;
+            let mut zip_file = archive.by_index(i).map_err(|e| {
+                AnalyzerError::generic(format!("Failed to read zip entry {}: {}", i, e))
+            })?;
 
             let file_name = zip_file.name();
             if file_name == "AppxManifest.xml" {
                 let mut content = String::new();
-                zip_file.read_to_string(&mut content)
-                    .map_err(|e| AnalyzerError::generic(format!("Failed to read AppxManifest.xml: {}", e)))?;
+                zip_file.read_to_string(&mut content).map_err(|e| {
+                    AnalyzerError::generic(format!("Failed to read AppxManifest.xml: {}", e))
+                })?;
                 return Ok(content);
             }
         }
 
-        Err(AnalyzerError::generic("AppxManifest.xml not found in MSIX/AppX package"))
+        Err(AnalyzerError::generic(
+            "AppxManifest.xml not found in MSIX/AppX package",
+        ))
     }
 
     /// Parse AppxManifest.xml content (simplified XML parsing)
     fn parse_manifest_content(&self, content: &str) -> Result<AppxManifest> {
         // This is a simplified XML parser for demonstration
         // In a production environment, you'd want to use a proper XML parser like quick-xml
-        
+
         let mut manifest = AppxManifest {
             identity_name: String::new(),
             identity_publisher: String::new(),
@@ -121,14 +125,18 @@ impl MsixParser {
         if let Some(identity_start) = content.find("<Identity") {
             if let Some(identity_end) = content[identity_start..].find("/>") {
                 let identity_section = &content[identity_start..identity_start + identity_end];
-                
-                manifest.identity_name = self.extract_xml_attribute(identity_section, "Name")
+
+                manifest.identity_name = self
+                    .extract_xml_attribute(identity_section, "Name")
                     .unwrap_or_default();
-                manifest.identity_publisher = self.extract_xml_attribute(identity_section, "Publisher")
+                manifest.identity_publisher = self
+                    .extract_xml_attribute(identity_section, "Publisher")
                     .unwrap_or_default();
-                manifest.identity_version = self.extract_xml_attribute(identity_section, "Version")
+                manifest.identity_version = self
+                    .extract_xml_attribute(identity_section, "Version")
                     .unwrap_or_default();
-                manifest.identity_processor_architecture = self.extract_xml_attribute(identity_section, "ProcessorArchitecture");
+                manifest.identity_processor_architecture =
+                    self.extract_xml_attribute(identity_section, "ProcessorArchitecture");
             }
         }
 
@@ -136,12 +144,15 @@ impl MsixParser {
         if let Some(props_start) = content.find("<Properties>") {
             if let Some(props_end) = content[props_start..].find("</Properties>") {
                 let props_section = &content[props_start..props_start + props_end];
-                
-                manifest.display_name = self.extract_xml_element_content(props_section, "DisplayName")
+
+                manifest.display_name = self
+                    .extract_xml_element_content(props_section, "DisplayName")
                     .unwrap_or_default();
-                manifest.publisher_display_name = self.extract_xml_element_content(props_section, "PublisherDisplayName")
+                manifest.publisher_display_name = self
+                    .extract_xml_element_content(props_section, "PublisherDisplayName")
                     .unwrap_or_default();
-                manifest.description = self.extract_xml_element_content(props_section, "Description");
+                manifest.description =
+                    self.extract_xml_element_content(props_section, "Description");
                 manifest.logo = self.extract_xml_element_content(props_section, "Logo");
             }
         }
@@ -152,17 +163,18 @@ impl MsixParser {
             let abs_start = search_pos + dep_start;
             if let Some(dep_end) = content[abs_start..].find("/>") {
                 let dep_section = &content[abs_start..abs_start + dep_end];
-                
+
                 if let Some(name) = self.extract_xml_attribute(dep_section, "Name") {
                     let dependency = AppxDependency {
                         name,
                         publisher: self.extract_xml_attribute(dep_section, "Publisher"),
                         min_version: self.extract_xml_attribute(dep_section, "MinVersion"),
-                        max_version_tested: self.extract_xml_attribute(dep_section, "MaxVersionTested"),
+                        max_version_tested: self
+                            .extract_xml_attribute(dep_section, "MaxVersionTested"),
                     };
                     manifest.dependencies.push(dependency);
                 }
-                
+
                 search_pos = abs_start + dep_end;
             } else {
                 break;
@@ -171,14 +183,14 @@ impl MsixParser {
 
         // Extract Capabilities (simplified)
         let capability_patterns = ["<Capability", "<DeviceCapability", "<RestrictedCapability"];
-        
+
         for pattern in &capability_patterns {
             search_pos = 0;
             while let Some(cap_start) = content[search_pos..].find(pattern) {
                 let abs_start = search_pos + cap_start;
                 if let Some(cap_end) = content[abs_start..].find("/>") {
                     let cap_section = &content[abs_start..abs_start + cap_end];
-                    
+
                     if let Some(name) = self.extract_xml_attribute(cap_section, "Name") {
                         let capability = AppxCapability {
                             name,
@@ -186,7 +198,7 @@ impl MsixParser {
                         };
                         manifest.capabilities.push(capability);
                     }
-                    
+
                     search_pos = abs_start + cap_end;
                 } else {
                     break;
@@ -213,7 +225,7 @@ impl MsixParser {
     fn extract_xml_element_content(&self, xml: &str, element_name: &str) -> Option<String> {
         let start_tag = format!("<{}>", element_name);
         let end_tag = format!("</{}>", element_name);
-        
+
         if let Some(start) = xml.find(&start_tag) {
             let content_start = start + start_tag.len();
             if let Some(end) = xml[content_start..].find(&end_tag) {
@@ -235,7 +247,10 @@ impl MsixParser {
     }
 
     /// Extract MSIX-specific metadata as HashMap
-    pub async fn extract_msix_properties(&self, file_path: &Path) -> Result<HashMap<String, String>> {
+    pub async fn extract_msix_properties(
+        &self,
+        file_path: &Path,
+    ) -> Result<HashMap<String, String>> {
         let mut properties = HashMap::new();
 
         // Get basic archive properties
@@ -246,26 +261,44 @@ impl MsixParser {
         match self.extract_manifest(file_path) {
             Ok(manifest) => {
                 properties.insert("msix_identity_name".to_string(), manifest.identity_name);
-                properties.insert("msix_identity_publisher".to_string(), manifest.identity_publisher);
-                properties.insert("msix_identity_version".to_string(), manifest.identity_version);
+                properties.insert(
+                    "msix_identity_publisher".to_string(),
+                    manifest.identity_publisher,
+                );
+                properties.insert(
+                    "msix_identity_version".to_string(),
+                    manifest.identity_version,
+                );
                 properties.insert("msix_display_name".to_string(), manifest.display_name);
-                properties.insert("msix_publisher_display_name".to_string(), manifest.publisher_display_name);
-                
+                properties.insert(
+                    "msix_publisher_display_name".to_string(),
+                    manifest.publisher_display_name,
+                );
+
                 if let Some(arch) = manifest.identity_processor_architecture {
                     properties.insert("msix_processor_architecture".to_string(), arch);
                 }
-                
+
                 if let Some(description) = manifest.description {
                     properties.insert("msix_description".to_string(), description);
                 }
-                
+
                 if let Some(min_version) = manifest.min_version {
                     properties.insert("msix_min_version".to_string(), min_version);
                 }
-                
-                properties.insert("msix_dependencies_count".to_string(), manifest.dependencies.len().to_string());
-                properties.insert("msix_capabilities_count".to_string(), manifest.capabilities.len().to_string());
-                properties.insert("msix_applications_count".to_string(), manifest.applications.len().to_string());
+
+                properties.insert(
+                    "msix_dependencies_count".to_string(),
+                    manifest.dependencies.len().to_string(),
+                );
+                properties.insert(
+                    "msix_capabilities_count".to_string(),
+                    manifest.capabilities.len().to_string(),
+                );
+                properties.insert(
+                    "msix_applications_count".to_string(),
+                    manifest.applications.len().to_string(),
+                );
             }
             Err(e) => {
                 tracing::warn!("Failed to extract MSIX manifest: {}", e);
@@ -274,7 +307,7 @@ impl MsixParser {
         }
 
         properties.insert("package_type".to_string(), "MSIX/AppX Package".to_string());
-        
+
         Ok(properties)
     }
 }

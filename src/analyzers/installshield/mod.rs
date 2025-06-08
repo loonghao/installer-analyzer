@@ -5,4 +5,4 @@ pub mod parser;
 
 // Re-export main components
 pub use analyzer::InstallShieldAnalyzer;
-pub use parser::{InstallShieldParser, InstallShieldVersion, InstallShieldMetadata};
+pub use parser::{InstallShieldMetadata, InstallShieldParser, InstallShieldVersion};

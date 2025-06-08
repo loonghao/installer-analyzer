@@ -1,8 +1,8 @@
 //! Common utilities for analyzers
 
-use crate::core::{Result, AnalyzerError, InstallerFormat};
+use crate::core::{AnalyzerError, InstallerFormat, Result};
+use sha2::{Digest, Sha256};
 use std::path::Path;
-use sha2::{Sha256, Digest};
 use tokio::io::{AsyncReadExt, AsyncSeekExt, SeekFrom};
 
 /// Calculate SHA-256 hash of a file
@@ -27,9 +27,10 @@ pub async fn validate_file(file_path: &Path) -> Result<()> {
     }
 
     if !file_path.is_file() {
-        return Err(AnalyzerError::invalid_format(
-            format!("Path is not a file: {}", file_path.display())
-        ));
+        return Err(AnalyzerError::invalid_format(format!(
+            "Path is not a file: {}",
+            file_path.display()
+        )));
     }
 
     // Try to read the first few bytes to ensure it's readable
@@ -49,7 +50,7 @@ pub fn detect_format_by_extension(file_path: &Path) -> Option<crate::core::Insta
             // Could be NSIS, InnoSetup, or other formats
             // We'll need to analyze the content to determine the exact format
             None
-        },
+        }
         "whl" => Some(crate::core::InstallerFormat::PythonWheel),
         _ => None,
     }
@@ -126,7 +127,11 @@ pub async fn search_file_content(file_path: &Path, patterns: &[&str]) -> Result<
 
         // Prepare overlap for next iteration
         if bytes_read == current_chunk_size && (position + current_chunk_size as u64) < file_size {
-            let overlap_start = if chunk.len() > OVERLAP_SIZE { chunk.len() - OVERLAP_SIZE } else { 0 };
+            let overlap_start = if chunk.len() > OVERLAP_SIZE {
+                chunk.len() - OVERLAP_SIZE
+            } else {
+                0
+            };
             overlap_buffer = chunk[overlap_start..].to_vec();
         } else {
             overlap_buffer.clear();
@@ -156,9 +161,10 @@ pub async fn detect_installer_format(file_path: &Path) -> Result<InstallerFormat
     }
 
     // Default to unknown format
-    Err(AnalyzerError::unsupported_format(
-        format!("Unable to determine installer format for: {}", file_path.display())
-    ))
+    Err(AnalyzerError::unsupported_format(format!(
+        "Unable to determine installer format for: {}",
+        file_path.display()
+    )))
 }
 
 /// Detect specific installer format for PE files
@@ -180,17 +186,26 @@ async fn detect_pe_installer_format(file_path: &Path) -> Result<InstallerFormat>
         tracing::info!("Detected NSIS installer: found patterns {:?}", nsis_matches);
         Ok(InstallerFormat::NSIS)
     } else if !inno_matches.is_empty() {
-        tracing::info!("Detected InnoSetup installer: found patterns {:?}", inno_matches);
+        tracing::info!(
+            "Detected InnoSetup installer: found patterns {:?}",
+            inno_matches
+        );
         Ok(InstallerFormat::InnoSetup)
     } else if !installshield_matches.is_empty() {
-        tracing::info!("Detected InstallShield installer: found patterns {:?}", installshield_matches);
+        tracing::info!(
+            "Detected InstallShield installer: found patterns {:?}",
+            installshield_matches
+        );
         Ok(InstallerFormat::InstallShield)
     } else if !wix_matches.is_empty() {
         tracing::info!("Detected WiX installer: found patterns {:?}", wix_matches);
         Ok(InstallerFormat::WiX)
     } else {
         // If no specific patterns found, classify as unknown format
-        tracing::warn!("No specific installer patterns found in PE file: {}", file_path.display());
+        tracing::warn!(
+            "No specific installer patterns found in PE file: {}",
+            file_path.display()
+        );
         Ok(InstallerFormat::Unknown)
     }
 }
@@ -207,9 +222,13 @@ pub async fn is_archive_file(file_path: &Path) -> Result<bool> {
 
         // 7z signature: 7z¼¯' (0x377ABCAF271C)
         if header.len() >= 6
-            && header[0] == 0x37 && header[1] == 0x7A
-            && header[2] == 0xBC && header[3] == 0xAF
-            && header[4] == 0x27 && header[5] == 0x1C {
+            && header[0] == 0x37
+            && header[1] == 0x7A
+            && header[2] == 0xBC
+            && header[3] == 0xAF
+            && header[4] == 0x27
+            && header[5] == 0x1C
+        {
             return Ok(true);
         }
     }
@@ -229,14 +248,19 @@ pub async fn detect_archive_format(file_path: &Path) -> Result<String> {
 
         // 7z signature: 7z¼¯' (0x377ABCAF271C)
         if header.len() >= 6
-            && header[0] == 0x37 && header[1] == 0x7A
-            && header[2] == 0xBC && header[3] == 0xAF
-            && header[4] == 0x27 && header[5] == 0x1C {
+            && header[0] == 0x37
+            && header[1] == 0x7A
+            && header[2] == 0xBC
+            && header[3] == 0xAF
+            && header[4] == 0x27
+            && header[5] == 0x1C
+        {
             return Ok("7Z".to_string());
         }
     }
 
-    Err(AnalyzerError::unsupported_format(
-        format!("Unknown archive format: {}", file_path.display())
-    ))
+    Err(AnalyzerError::unsupported_format(format!(
+        "Unknown archive format: {}",
+        file_path.display()
+    )))
 }

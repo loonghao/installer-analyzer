@@ -1,13 +1,13 @@
 //! Complete MSI analyzer implementation
 
-use crate::core::{Result, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
-use crate::analyzers::{InstallerAnalyzer, common};
 use crate::analyzers::msi::database::MsiDatabase;
 use crate::analyzers::msi::tables::MsiTables;
+use crate::analyzers::{common, InstallerAnalyzer};
+use crate::core::{FileEntry, InstallerFormat, InstallerMetadata, RegistryOperation, Result};
 use async_trait::async_trait;
-use std::path::Path;
 use chrono::Utc;
 use std::collections::HashMap;
+use std::path::Path;
 
 /// MSI format analyzer
 pub struct MsiAnalyzer;
@@ -21,7 +21,7 @@ impl MsiAnalyzer {
     /// Check if file has MSI signature
     async fn has_msi_signature(file_path: &Path) -> Result<bool> {
         let header = common::read_file_header(file_path, 8).await?;
-        
+
         // MSI files start with the OLE compound document signature
         // D0CF11E0A1B11AE1 (little-endian)
         if header.len() >= 8 {
@@ -39,34 +39,32 @@ impl MsiAnalyzer {
         let file_hash = common::calculate_file_hash(file_path).await?;
 
         // Try to open MSI database and extract properties
-        let (product_name, product_version, manufacturer, mut properties) = 
+        let (product_name, product_version, manufacturer, mut properties) =
             match MsiDatabase::open(file_path) {
-                Ok(db) => {
-                    match MsiTables::query_properties(&db) {
-                        Ok(props) => {
-                            let mut prop_map = HashMap::new();
-                            let mut product_name = None;
-                            let mut product_version = None;
-                            let mut manufacturer = None;
+                Ok(db) => match MsiTables::query_properties(&db) {
+                    Ok(props) => {
+                        let mut prop_map = HashMap::new();
+                        let mut product_name = None;
+                        let mut product_version = None;
+                        let mut manufacturer = None;
 
-                            for prop in props {
-                                match prop.property.as_str() {
-                                    "ProductName" => product_name = Some(prop.value.clone()),
-                                    "ProductVersion" => product_version = Some(prop.value.clone()),
-                                    "Manufacturer" => manufacturer = Some(prop.value.clone()),
-                                    _ => {}
-                                }
-                                prop_map.insert(prop.property, prop.value);
+                        for prop in props {
+                            match prop.property.as_str() {
+                                "ProductName" => product_name = Some(prop.value.clone()),
+                                "ProductVersion" => product_version = Some(prop.value.clone()),
+                                "Manufacturer" => manufacturer = Some(prop.value.clone()),
+                                _ => {}
                             }
+                            prop_map.insert(prop.property, prop.value);
+                        }
 
-                            (product_name, product_version, manufacturer, prop_map)
-                        }
-                        Err(e) => {
-                            tracing::warn!("Failed to query MSI properties: {}", e);
-                            (None, None, None, HashMap::new())
-                        }
+                        (product_name, product_version, manufacturer, prop_map)
                     }
-                }
+                    Err(e) => {
+                        tracing::warn!("Failed to query MSI properties: {}", e);
+                        (None, None, None, HashMap::new())
+                    }
+                },
                 Err(e) => {
                     tracing::warn!("Failed to open MSI database: {}", e);
                     (None, None, None, HashMap::new())
@@ -75,7 +73,10 @@ impl MsiAnalyzer {
 
         // Add format information
         properties.insert("format_version".to_string(), "MSI".to_string());
-        properties.insert("file_type".to_string(), "Windows Installer Package".to_string());
+        properties.insert(
+            "file_type".to_string(),
+            "Windows Installer Package".to_string(),
+        );
 
         Ok(InstallerMetadata {
             format: InstallerFormat::MSI,
@@ -92,31 +93,35 @@ impl MsiAnalyzer {
     /// Extract files from MSI database
     async fn extract_msi_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         let db = MsiDatabase::open(file_path)?;
-        
+
         // Query File and Directory tables
         let files = MsiTables::query_files(&db)?;
         let directories = MsiTables::query_directories(&db)?;
-        
-        tracing::info!("Found {} files and {} directories in MSI", files.len(), directories.len());
-        
+
+        tracing::info!(
+            "Found {} files and {} directories in MSI",
+            files.len(),
+            directories.len()
+        );
+
         // Convert to our FileEntry format
         let file_entries = MsiTables::convert_to_file_entries(files, directories);
-        
+
         Ok(file_entries)
     }
 
     /// Extract registry operations from MSI database
     async fn extract_msi_registry(&self, file_path: &Path) -> Result<Vec<RegistryOperation>> {
         let db = MsiDatabase::open(file_path)?;
-        
+
         // Query Registry table
         let registry_entries = MsiTables::query_registry(&db)?;
-        
+
         tracing::info!("Found {} registry entries in MSI", registry_entries.len());
-        
+
         // Convert to our RegistryOperation format
         let operations = MsiTables::convert_to_registry_operations(registry_entries);
-        
+
         Ok(operations)
     }
 }
@@ -131,7 +136,7 @@ impl InstallerAnalyzer for MsiAnalyzer {
                 return Self::has_msi_signature(file_path).await;
             }
         }
-        
+
         // If no .msi extension, check signature anyway
         Self::has_msi_signature(file_path).await
     }
@@ -143,21 +148,24 @@ impl InstallerAnalyzer for MsiAnalyzer {
     async fn extract_metadata(&self, file_path: &Path) -> Result<InstallerMetadata> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_msi_metadata(file_path).await
     }
 
     async fn extract_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_msi_files(file_path).await
     }
 
-    async fn extract_registry_operations(&self, file_path: &Path) -> Result<Vec<RegistryOperation>> {
+    async fn extract_registry_operations(
+        &self,
+        file_path: &Path,
+    ) -> Result<Vec<RegistryOperation>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_msi_registry(file_path).await
     }
 }

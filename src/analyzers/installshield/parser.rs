@@ -1,9 +1,9 @@
 //! InstallShield data structure parser
 
-use crate::core::{Result, FileEntry, FileAttributes};
 use crate::analyzers::common;
-use std::path::{Path, PathBuf};
+use crate::core::{FileAttributes, FileEntry, Result};
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 /// InstallShield version information
 #[derive(Debug, Clone)]
@@ -56,8 +56,8 @@ impl InstallShieldParser {
 
         // Check for InstallShield patterns
         let installshield_patterns = [
-            "InstallShield", 
-            "InstallScript", 
+            "InstallShield",
+            "InstallScript",
             "Stirling Technologies",
             "Macrovision",
             "Flexera Software",
@@ -101,10 +101,14 @@ impl InstallShieldParser {
 
         // Check for legacy patterns
         let legacy_patterns = [
-            "InstallShield 3", "InstallShield 5", "InstallShield 6",
-            "InstallShield 7", "InstallShield 8", "InstallShield Express",
+            "InstallShield 3",
+            "InstallShield 5",
+            "InstallShield 6",
+            "InstallShield 7",
+            "InstallShield 8",
+            "InstallShield Express",
         ];
-        
+
         let legacy_matches = common::search_file_content(file_path, &legacy_patterns).await?;
         if !legacy_matches.is_empty() {
             return Ok(InstallShieldVersion::Legacy);
@@ -119,7 +123,8 @@ impl InstallShieldParser {
         let file_size = common::get_file_size(file_path).await?;
 
         // Try to extract product information from file properties
-        let (product_name, product_version, company_name) = self.extract_pe_version_info(file_path).await?;
+        let (product_name, product_version, company_name) =
+            self.extract_pe_version_info(file_path).await?;
 
         // Detect setup type
         let setup_type = self.detect_setup_type(file_path).await?;
@@ -141,18 +146,25 @@ impl InstallShieldParser {
     }
 
     /// Extract version information from PE file
-    async fn extract_pe_version_info(&self, file_path: &Path) -> Result<(Option<String>, Option<String>, Option<String>)> {
+    async fn extract_pe_version_info(
+        &self,
+        file_path: &Path,
+    ) -> Result<(Option<String>, Option<String>, Option<String>)> {
         // This is a simplified implementation
         // In a real implementation, you would parse the PE version info resource
-        
+
         // Try to find common product name patterns
         let _product_patterns = [
-            "ProductName", "FileDescription", "InternalName",
-            "OriginalFilename", "CompanyName", "FileVersion",
+            "ProductName",
+            "FileDescription",
+            "InternalName",
+            "OriginalFilename",
+            "CompanyName",
+            "FileVersion",
         ];
 
         let content = common::read_file_content_range(file_path, 0, 1024 * 1024).await?; // Read first 1MB
-        
+
         let mut product_name = None;
         let mut product_version = None;
         let mut company_name = None;
@@ -163,7 +175,9 @@ impl InstallShieldParser {
             if let Some(start) = content_str.find("FileVersion") {
                 if let Some(version_start) = content_str[start..].find(char::is_numeric) {
                     let version_part = &content_str[start + version_start..];
-                    if let Some(version_end) = version_part.find(|c: char| !c.is_numeric() && c != '.') {
+                    if let Some(version_end) =
+                        version_part.find(|c: char| !c.is_numeric() && c != '.')
+                    {
                         product_version = Some(version_part[..version_end].to_string());
                     }
                 }
@@ -232,23 +246,21 @@ impl InstallShieldParser {
         // implementation that creates placeholder entries.
 
         let file_size = common::get_file_size(file_path).await?;
-        
+
         // Create a basic file entry representing the installer itself
-        let mut files = vec![
-            FileEntry {
-                path: PathBuf::from("setup.exe"),
-                target_path: Some(PathBuf::from("C:\\Program Files\\[ProductName]\\setup.exe")),
-                size: file_size,
-                hash: None,
-                attributes: FileAttributes {
-                    readonly: false,
-                    hidden: false,
-                    system: false,
-                    executable: true,
-                },
-                compression: Some("InstallShield".to_string()),
-            }
-        ];
+        let mut files = vec![FileEntry {
+            path: PathBuf::from("setup.exe"),
+            target_path: Some(PathBuf::from("C:\\Program Files\\[ProductName]\\setup.exe")),
+            size: file_size,
+            hash: None,
+            attributes: FileAttributes {
+                readonly: false,
+                hidden: false,
+                system: false,
+                executable: true,
+            },
+            compression: Some("InstallShield".to_string()),
+        }];
 
         // Add some common files that InstallShield packages typically contain
         let common_files = [
@@ -263,7 +275,10 @@ impl InstallShieldParser {
         for (filename, size, executable) in &common_files {
             files.push(FileEntry {
                 path: PathBuf::from(filename),
-                target_path: Some(PathBuf::from(format!("C:\\Program Files\\[ProductName]\\{}", filename))),
+                target_path: Some(PathBuf::from(format!(
+                    "C:\\Program Files\\[ProductName]\\{}",
+                    filename
+                ))),
                 size: *size,
                 hash: None,
                 attributes: FileAttributes {
@@ -285,16 +300,19 @@ impl InstallShieldParser {
 
         let metadata = self.extract_metadata(file_path).await?;
 
-        properties.insert("installshield_version".to_string(), format!("{:?}", metadata.version));
-        
+        properties.insert(
+            "installshield_version".to_string(),
+            format!("{:?}", metadata.version),
+        );
+
         if let Some(setup_type) = metadata.setup_type {
             properties.insert("installshield_setup_type".to_string(), setup_type);
         }
-        
+
         if let Some(compression) = metadata.compression_method {
             properties.insert("installshield_compression".to_string(), compression);
         }
-        
+
         if let Some(language) = metadata.language {
             properties.insert("installshield_language".to_string(), language);
         }

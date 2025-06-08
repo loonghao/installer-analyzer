@@ -1,25 +1,21 @@
 //! CLI command implementations
 
-use crate::core::{Result, AnalyzerError, AnalysisResult, SandboxConfig};
 use crate::analyzers::AnalyzerFactory;
-use crate::reporting::{ReportGenerator, Reporter, ReportFormat};
-use crate::sandbox::{SandboxController, Sandbox};
+use crate::core::{AnalysisResult, AnalyzerError, Result, SandboxConfig};
+use crate::reporting::{ReportFormat, ReportGenerator, Reporter};
+use crate::sandbox::{Sandbox, SandboxController};
+use chrono::Utc;
 use std::path::Path;
 use std::time::{Duration, Instant};
-use chrono::Utc;
 use uuid::Uuid;
 
 /// Handle the analyze command
-pub async fn handle_analyze(
-    input: &Path,
-    output: Option<&Path>,
-    format: &str,
-) -> Result<()> {
+pub async fn handle_analyze(input: &Path, output: Option<&Path>, format: &str) -> Result<()> {
     tracing::info!("Starting static analysis of: {}", input.display());
 
     // Create analyzer
     let analyzer = AnalyzerFactory::create_analyzer(input).await?;
-    
+
     // Perform analysis
     let start_time = Instant::now();
     let (metadata, files, registry_ops) = analyzer.analyze(input).await?;
@@ -44,10 +40,17 @@ pub async fn handle_analyze(
     let report_format = parse_format(format)?;
 
     if let Some(output_path) = output {
-        report_generator.save_report(&result, report_format, output_path).await?;
-        println!("Analysis complete. Report saved to: {}", output_path.display());
+        report_generator
+            .save_report(&result, report_format, output_path)
+            .await?;
+        println!(
+            "Analysis complete. Report saved to: {}",
+            output_path.display()
+        );
     } else {
-        let report_content = report_generator.generate_report(&result, report_format).await?;
+        let report_content = report_generator
+            .generate_report(&result, report_format)
+            .await?;
         println!("{}", report_content);
     }
 
@@ -82,10 +85,17 @@ pub async fn handle_sandbox(
     let report_format = parse_format(format)?;
 
     if let Some(output_path) = output {
-        report_generator.save_report(&result, report_format, output_path).await?;
-        println!("Sandbox analysis complete. Report saved to: {}", output_path.display());
+        report_generator
+            .save_report(&result, report_format, output_path)
+            .await?;
+        println!(
+            "Sandbox analysis complete. Report saved to: {}",
+            output_path.display()
+        );
     } else {
-        let report_content = report_generator.generate_report(&result, report_format).await?;
+        let report_content = report_generator
+            .generate_report(&result, report_format)
+            .await?;
         println!("{}", report_content);
     }
 
@@ -99,7 +109,10 @@ pub async fn handle_batch(
     format: &str,
     use_sandbox: bool,
 ) -> Result<()> {
-    tracing::info!("Starting batch analysis of directory: {}", input_dir.display());
+    tracing::info!(
+        "Starting batch analysis of directory: {}",
+        input_dir.display()
+    );
 
     // Create output directory if it doesn't exist
     tokio::fs::create_dir_all(output_dir).await?;
@@ -111,7 +124,7 @@ pub async fn handle_batch(
 
     while let Some(entry) = entries.next_entry().await? {
         let path = entry.path();
-        
+
         if !path.is_file() {
             continue;
         }
@@ -121,11 +134,16 @@ pub async fn handle_batch(
             continue;
         }
 
-        let file_name = path.file_stem()
+        let file_name = path
+            .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("unknown");
-        
-        let output_file = output_dir.join(format!("{}_report.{}", file_name, get_file_extension(format)));
+
+        let output_file = output_dir.join(format!(
+            "{}_report.{}",
+            file_name,
+            get_file_extension(format)
+        ));
 
         println!("Processing: {}", path.display());
 
@@ -211,9 +229,10 @@ fn parse_format(format: &str) -> Result<ReportFormat> {
         "json" => Ok(ReportFormat::Json),
         "html" => Ok(ReportFormat::Html),
         "markdown" | "md" => Ok(ReportFormat::Markdown),
-        _ => Err(AnalyzerError::config_error(
-            format!("Unsupported format: {}", format)
-        )),
+        _ => Err(AnalyzerError::config_error(format!(
+            "Unsupported format: {}",
+            format
+        ))),
     }
 }
 
@@ -232,10 +251,10 @@ fn is_supported_file(path: &Path) -> bool {
     if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
         match ext.to_lowercase().as_str() {
             // Fully supported formats
-            "msi" => true,  // MSI files
-            "exe" => true,  // NSIS and InnoSetup files
+            "msi" => true, // MSI files
+            "exe" => true, // NSIS and InnoSetup files
             // Planned support
-            "whl" => true,  // Python Wheel files
+            "whl" => true, // Python Wheel files
             // Other potential formats
             "7z" | "rar" | "zip" | "tar" | "gz" | "bz2" => false, // Not yet supported
             _ => false,

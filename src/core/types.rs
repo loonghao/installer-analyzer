@@ -1,9 +1,9 @@
 //! Core type definitions for the installer analyzer
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 /// Supported installer formats

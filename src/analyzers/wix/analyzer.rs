@@ -1,12 +1,12 @@
 //! WiX Toolset analyzer implementation
 
-use crate::core::{Result, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
-use crate::analyzers::{InstallerAnalyzer, MsiAnalyzer, common};
+use crate::analyzers::{common, InstallerAnalyzer, MsiAnalyzer};
+use crate::core::{FileEntry, InstallerFormat, InstallerMetadata, RegistryOperation, Result};
 use async_trait::async_trait;
 use std::path::Path;
 
 /// WiX Toolset installer analyzer
-/// 
+///
 /// WiX generates MSI files with specific characteristics that can be detected
 /// to distinguish them from other MSI generators.
 pub struct WixAnalyzer {
@@ -56,43 +56,49 @@ impl WixAnalyzer {
     async fn extract_wix_metadata(&self, file_path: &Path) -> Result<InstallerMetadata> {
         // Start with base MSI metadata
         let mut metadata = self.msi_analyzer.extract_metadata(file_path).await?;
-        
+
         // Override format to WiX
         metadata.format = InstallerFormat::WiX;
-        
+
         // Add WiX-specific properties
         let wix_properties = self.extract_wix_properties(file_path).await?;
         metadata.properties.extend(wix_properties);
-        
+
         Ok(metadata)
     }
 
     /// Extract WiX-specific properties
-    async fn extract_wix_properties(&self, file_path: &Path) -> Result<std::collections::HashMap<String, String>> {
+    async fn extract_wix_properties(
+        &self,
+        file_path: &Path,
+    ) -> Result<std::collections::HashMap<String, String>> {
         let mut properties = std::collections::HashMap::new();
-        
+
         // Detect WiX version
         let wix_version = self.detect_wix_version(file_path).await?;
         if let Some(version) = wix_version {
             properties.insert("wix_version".to_string(), version);
         }
-        
+
         // Detect WiX extensions
         let extensions = self.detect_wix_extensions(file_path).await?;
         if !extensions.is_empty() {
             properties.insert("wix_extensions".to_string(), extensions.join(", "));
-            properties.insert("wix_extensions_count".to_string(), extensions.len().to_string());
+            properties.insert(
+                "wix_extensions_count".to_string(),
+                extensions.len().to_string(),
+            );
         }
-        
+
         // Detect WiX UI
         let ui_type = self.detect_wix_ui(file_path).await?;
         if let Some(ui) = ui_type {
             properties.insert("wix_ui_type".to_string(), ui);
         }
-        
+
         properties.insert("generator_tool".to_string(), "WiX Toolset".to_string());
         properties.insert("msi_variant".to_string(), "WiX-generated".to_string());
-        
+
         Ok(properties)
     }
 
@@ -139,7 +145,7 @@ impl WixAnalyzer {
         ];
 
         let mut extensions = Vec::new();
-        
+
         for (pattern, extension_name) in &extension_patterns {
             let matches = common::search_file_content(file_path, &[pattern]).await?;
             if !matches.is_empty() {
@@ -189,24 +195,29 @@ impl InstallerAnalyzer for WixAnalyzer {
     async fn extract_metadata(&self, file_path: &Path) -> Result<InstallerMetadata> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_wix_metadata(file_path).await
     }
 
     async fn extract_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         // Delegate to MSI analyzer for file extraction
         self.msi_analyzer.extract_files(file_path).await
     }
 
-    async fn extract_registry_operations(&self, file_path: &Path) -> Result<Vec<RegistryOperation>> {
+    async fn extract_registry_operations(
+        &self,
+        file_path: &Path,
+    ) -> Result<Vec<RegistryOperation>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         // Delegate to MSI analyzer for registry operations
-        self.msi_analyzer.extract_registry_operations(file_path).await
+        self.msi_analyzer
+            .extract_registry_operations(file_path)
+            .await
     }
 }
 

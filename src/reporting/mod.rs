@@ -1,6 +1,6 @@
 //! Report generation functionality
 
-use crate::core::{Result, AnalysisResult};
+use crate::core::{AnalysisResult, Result};
 use std::path::Path;
 
 pub mod generator;
@@ -20,8 +20,17 @@ pub enum ReportFormat {
 /// Trait for report generators
 pub trait Reporter {
     /// Generate report in specified format
-    async fn generate_report(&self, result: &AnalysisResult, format: ReportFormat) -> Result<String>;
-    
+    async fn generate_report(
+        &self,
+        result: &AnalysisResult,
+        format: ReportFormat,
+    ) -> Result<String>;
+
     /// Save report to file
-    async fn save_report(&self, result: &AnalysisResult, format: ReportFormat, output_path: &Path) -> Result<()>;
+    async fn save_report(
+        &self,
+        result: &AnalysisResult,
+        format: ReportFormat,
+        output_path: &Path,
+    ) -> Result<()>;
 }

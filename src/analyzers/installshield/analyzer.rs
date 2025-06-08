@@ -1,11 +1,11 @@
 //! InstallShield analyzer implementation
 
-use crate::core::{Result, InstallerFormat, InstallerMetadata, FileEntry, RegistryOperation};
-use crate::analyzers::{InstallerAnalyzer, common};
 use super::parser::InstallShieldParser;
+use crate::analyzers::{common, InstallerAnalyzer};
+use crate::core::{FileEntry, InstallerFormat, InstallerMetadata, RegistryOperation, Result};
 use async_trait::async_trait;
-use std::path::Path;
 use chrono::Utc;
+use std::path::Path;
 
 /// InstallShield installer analyzer
 pub struct InstallShieldAnalyzer {
@@ -36,16 +36,17 @@ impl InstallShieldAnalyzer {
         // Extract InstallShield metadata for product info
         let installshield_metadata = self.parser.extract_metadata(file_path).await?;
 
-        let product_name = installshield_metadata.product_name
-            .or_else(|| {
-                // Fallback to filename parsing
-                file_path.file_stem()
-                    .and_then(|s| s.to_str())
-                    .map(|s| s.to_string())
-            });
+        let product_name = installshield_metadata.product_name.or_else(|| {
+            // Fallback to filename parsing
+            file_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string())
+        });
 
         let product_version = installshield_metadata.product_version;
-        let manufacturer = installshield_metadata.company_name
+        let manufacturer = installshield_metadata
+            .company_name
             .or_else(|| Some("Unknown".to_string()));
 
         Ok(InstallerMetadata {
@@ -62,26 +63,32 @@ impl InstallShieldAnalyzer {
 
     /// Extract files from InstallShield package
     async fn extract_installshield_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
-        tracing::info!("Extracting files from InstallShield package: {}", file_path.display());
-        
+        tracing::info!(
+            "Extracting files from InstallShield package: {}",
+            file_path.display()
+        );
+
         let files = self.parser.extract_files(file_path).await?;
-        
+
         tracing::info!("Found {} files in InstallShield package", files.len());
-        
+
         Ok(files)
     }
 
     /// Extract registry operations from InstallShield package
-    async fn extract_installshield_registry(&self, _file_path: &Path) -> Result<Vec<RegistryOperation>> {
+    async fn extract_installshield_registry(
+        &self,
+        _file_path: &Path,
+    ) -> Result<Vec<RegistryOperation>> {
         // InstallShield packages can contain registry operations, but extracting them
         // requires deep analysis of the InstallShield format and potentially running
         // the installer in a sandbox environment.
-        // 
+        //
         // For static analysis, we provide common InstallShield registry patterns
         // that are typically created during installation.
-        
+
         let mut operations = Vec::new();
-        
+
         // Common InstallShield registry entries
         let common_registry_ops = [
             ("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\[ProductCode]", "DisplayName"),
@@ -103,8 +110,11 @@ impl InstallShieldAnalyzer {
             });
         }
 
-        tracing::info!("Generated {} common registry operations for InstallShield package", operations.len());
-        
+        tracing::info!(
+            "Generated {} common registry operations for InstallShield package",
+            operations.len()
+        );
+
         Ok(operations)
     }
 }
@@ -126,21 +136,24 @@ impl InstallerAnalyzer for InstallShieldAnalyzer {
     async fn extract_metadata(&self, file_path: &Path) -> Result<InstallerMetadata> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_installshield_metadata(file_path).await
     }
 
     async fn extract_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_installshield_files(file_path).await
     }
 
-    async fn extract_registry_operations(&self, file_path: &Path) -> Result<Vec<RegistryOperation>> {
+    async fn extract_registry_operations(
+        &self,
+        file_path: &Path,
+    ) -> Result<Vec<RegistryOperation>> {
         // Validate file first
         common::validate_file(file_path).await?;
-        
+
         self.extract_installshield_registry(file_path).await
     }
 }

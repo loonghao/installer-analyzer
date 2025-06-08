@@ -1,9 +1,11 @@
 //! InnoSetup data structure parser
 
-use crate::core::{Result, FileEntry, FileAttributes, RegistryOperation, RegistryValue, RegistryValueType};
-use std::path::{Path, PathBuf};
-use std::collections::HashMap;
+use crate::core::{
+    FileAttributes, FileEntry, RegistryOperation, RegistryValue, RegistryValueType, Result,
+};
 use chrono::Utc;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 /// InnoSetup header structure (simplified)
 #[derive(Debug)]
@@ -54,7 +56,9 @@ impl InnoParser {
             // For now, return a basic header structure
             // In a real implementation, we would parse the actual InnoSetup header
             Ok(Some(InnoHeader {
-                signature: [b'I', b'n', b'n', b'o', b'S', b'e', b't', b'u', b'p', b' ', b'5', b'.'],
+                signature: [
+                    b'I', b'n', b'n', b'o', b'S', b'e', b't', b'u', b'p', b' ', b'5', b'.',
+                ],
                 version: 5,
                 compressed_size: 0,
                 uncompressed_size: data.len() as u32,
@@ -92,9 +96,9 @@ impl InnoParser {
     pub fn extract_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         // For now, we'll extract basic information
         // In a real implementation, we would parse the InnoSetup data structures
-        
+
         let mut files = Vec::new();
-        
+
         // Try to extract some basic file information
         if let Ok(file_info) = self.extract_basic_file_info(file_path) {
             files.extend(file_info);
@@ -103,7 +107,8 @@ impl InnoParser {
         // Add the installer itself as a file entry
         if let Ok(metadata) = std::fs::metadata(file_path) {
             files.push(FileEntry {
-                path: file_path.file_name()
+                path: file_path
+                    .file_name()
                     .unwrap_or_default()
                     .to_string_lossy()
                     .to_string()
@@ -128,16 +133,16 @@ impl InnoParser {
     fn extract_basic_file_info(&self, _file_path: &Path) -> Result<Vec<FileEntry>> {
         // This is a placeholder implementation
         // Real InnoSetup file extraction would require parsing the InnoSetup data structures
-        
+
         let mut files = Vec::new();
-        
+
         // Add some common InnoSetup-installed files as examples
         let common_files = [
-            ("unins000.exe", 1024 * 150, true),  // InnoSetup uninstaller
+            ("unins000.exe", 1024 * 150, true), // InnoSetup uninstaller
             ("unins000.dat", 1024 * 50, false), // Uninstaller data
             ("readme.txt", 1024 * 8, false),
             ("license.txt", 1024 * 12, false),
-            ("setup.exe", 1024 * 200, true),    // Main application
+            ("setup.exe", 1024 * 200, true), // Main application
         ];
 
         for (name, size, executable) in &common_files {
@@ -163,7 +168,7 @@ impl InnoParser {
     pub fn extract_registry_operations(&self, _file_path: &Path) -> Result<Vec<RegistryOperation>> {
         // This is a placeholder implementation
         // Real InnoSetup registry extraction would require parsing the InnoSetup script
-        
+
         let mut operations = Vec::new();
         let now = Utc::now();
 
@@ -220,15 +225,21 @@ impl InnoParser {
     /// Extract version information from PE resources (placeholder)
     fn extract_version_info(&self, _file_path: &Path) -> Result<HashMap<String, String>> {
         let mut info = HashMap::new();
-        
+
         // This would normally parse PE version resources
         // For now, we'll return some placeholder data
-        info.insert("FileDescription".to_string(), "InnoSetup Installer".to_string());
+        info.insert(
+            "FileDescription".to_string(),
+            "InnoSetup Installer".to_string(),
+        );
         info.insert("FileVersion".to_string(), "1.0.0.0".to_string());
         info.insert("ProductName".to_string(), "Unknown Application".to_string());
         info.insert("ProductVersion".to_string(), "1.0.0".to_string());
         info.insert("CompanyName".to_string(), "Unknown Publisher".to_string());
-        info.insert("LegalCopyright".to_string(), "Copyright (C) Unknown".to_string());
+        info.insert(
+            "LegalCopyright".to_string(),
+            "Copyright (C) Unknown".to_string(),
+        );
 
         Ok(info)
     }
