@@ -53,19 +53,22 @@ flate2 = "1.0"
 # Binary parsing
 byteorder = "1.4"
 
+# Regular expressions
+regex = "1.0"
+
 # Cryptography
 sha2 = "0.10"
 hex = "0.4"
 
 # Template engine
-handlebars = "4.0"
+handlebars = "6.3"
 
 # Open browser
 open = "5.0"
 # CLI enhancement libraries
 indicatif = "0.17"      # Progress bars and spinners
 console = "0.15"        # Cross-platform terminal utilities
-colored = "2.0"         # Cross-platform colored terminal text
+colored = "3.0"         # Cross-platform colored terminal text
 
 [dev-dependencies]
 tempfile = "3.0"

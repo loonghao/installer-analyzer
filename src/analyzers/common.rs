@@ -1,15 +1,61 @@
 //! Common utilities for analyzers
 
+pub mod metadata_extractor;
+
 use crate::core::{AnalyzerError, InstallerFormat, Result};
 use sha2::{Digest, Sha256};
 use std::path::Path;
 use tokio::io::{AsyncReadExt, AsyncSeekExt, SeekFrom};
 
-/// Calculate SHA-256 hash of a file
+// Re-export for convenience
+pub use metadata_extractor::{EnhancedMetadata, FilenameParser, MetadataExtractor};
+
+/// Calculate SHA-256 hash of a file with progress logging for large files
 pub async fn calculate_file_hash(file_path: &Path) -> Result<String> {
-    let data = tokio::fs::read(file_path).await?;
+    let file_size = get_file_size(file_path).await?;
+
+    // For large files (>50MB), use chunked reading with progress
+    if file_size > 50 * 1024 * 1024 {
+        calculate_file_hash_chunked(file_path, file_size).await
+    } else {
+        let data = tokio::fs::read(file_path).await?;
+        let mut hasher = Sha256::new();
+        hasher.update(&data);
+        let result = hasher.finalize();
+        Ok(format!("{:x}", result))
+    }
+}
+
+/// Calculate hash for large files using chunked reading
+async fn calculate_file_hash_chunked(file_path: &Path, file_size: u64) -> Result<String> {
+    const CHUNK_SIZE: usize = 8 * 1024 * 1024; // 8MB chunks
+
+    tracing::info!(
+        "Calculating hash for large file ({:.1} MB)...",
+        file_size as f64 / 1024.0 / 1024.0
+    );
+
+    let mut file = tokio::fs::File::open(file_path).await?;
     let mut hasher = Sha256::new();
-    hasher.update(&data);
+    let mut buffer = vec![0u8; CHUNK_SIZE];
+    let mut processed = 0u64;
+
+    loop {
+        let bytes_read = file.read(&mut buffer).await?;
+        if bytes_read == 0 {
+            break;
+        }
+
+        hasher.update(&buffer[..bytes_read]);
+        processed += bytes_read as u64;
+
+        // Log progress every 50MB
+        if processed % (50 * 1024 * 1024) == 0 || processed == file_size {
+            let progress = (processed as f64 / file_size as f64) * 100.0;
+            tracing::info!("Hash calculation progress: {:.1}%", progress);
+        }
+    }
+
     let result = hasher.finalize();
     Ok(format!("{:x}", result))
 }
@@ -20,7 +66,7 @@ pub async fn get_file_size(file_path: &Path) -> Result<u64> {
     Ok(metadata.len())
 }
 
-/// Check if file exists and is readable
+/// Check if file exists and is readable with size information
 pub async fn validate_file(file_path: &Path) -> Result<()> {
     if !file_path.exists() {
         return Err(AnalyzerError::file_not_found(file_path));
@@ -31,6 +77,15 @@ pub async fn validate_file(file_path: &Path) -> Result<()> {
             "Path is not a file: {}",
             file_path.display()
         )));
+    }
+
+    // Get file size and log for large files
+    let file_size = get_file_size(file_path).await?;
+    if file_size > 100 * 1024 * 1024 {
+        tracing::info!(
+            "Processing large file: {:.1} MB",
+            file_size as f64 / 1024.0 / 1024.0
+        );
     }
 
     // Try to read the first few bytes to ensure it's readable

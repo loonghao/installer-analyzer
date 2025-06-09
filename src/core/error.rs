@@ -11,7 +11,7 @@ pub enum AnalyzerError {
     Io(#[from] std::io::Error),
 
     /// File format not supported
-    #[error("Unsupported file format: {format}")]
+    #[error("Analysis Error: Unsupported file format - {format}")]
     UnsupportedFormat { format: String },
 
     /// File not found

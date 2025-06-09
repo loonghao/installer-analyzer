@@ -7,19 +7,23 @@ use std::path::Path;
 pub fn init_logging(verbose: bool) -> Result<()> {
     use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-    let filter = if verbose {
-        "installer_analyzer=debug,info"
+    if verbose {
+        let filter = "installer_analyzer=debug,info";
+        tracing_subscriber::registry()
+            .with(
+                tracing_subscriber::EnvFilter::try_from_default_env()
+                    .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(filter)),
+            )
+            .with(tracing_subscriber::fmt::layer())
+            .init();
     } else {
-        "installer_analyzer=info,warn,error"
-    };
-
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(filter)),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
+        // In non-verbose mode, disable all logging output
+        // Only progress bars and essential CLI output will be shown
+        tracing_subscriber::registry()
+            .with(tracing_subscriber::EnvFilter::new("off"))
+            .with(tracing_subscriber::fmt::layer().with_writer(std::io::sink))
+            .init();
+    }
 
     Ok(())
 }

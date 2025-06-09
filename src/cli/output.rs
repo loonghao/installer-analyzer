@@ -96,15 +96,15 @@ impl CliOutput {
 
     /// Create a spinner for indeterminate progress
     pub fn create_spinner(message: &str) -> ProgressBar {
-        let pb = ProgressBar::new_spinner();
-        pb.set_style(
-            ProgressStyle::with_template("{spinner:.green} {msg}")
+        let spinner = ProgressBar::new_spinner();
+        spinner.set_style(
+            ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] {msg}")
                 .unwrap()
-                .tick_strings(&["⠁", "⠂", "⠄", "⡀", "⢀", "⠠", "⠐", "⠈"]),
+                .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
         );
-        pb.set_message(message.to_string());
-        pb.enable_steady_tick(Duration::from_millis(120));
-        pb
+        spinner.set_message(message.to_string());
+        spinner.enable_steady_tick(Duration::from_millis(120));
+        spinner
     }
 
     /// Finish a progress bar with success

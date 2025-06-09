@@ -94,8 +94,11 @@ impl MsiAnalyzer {
     async fn extract_msi_files(&self, file_path: &Path) -> Result<Vec<FileEntry>> {
         let db = MsiDatabase::open(file_path)?;
 
-        // Query File and Directory tables
+        // Query File and Directory tables with progress logging
+        tracing::info!("Querying MSI File table...");
         let files = MsiTables::query_files(&db)?;
+
+        tracing::info!("Querying MSI Directory table...");
         let directories = MsiTables::query_directories(&db)?;
 
         tracing::info!(
@@ -104,7 +107,10 @@ impl MsiAnalyzer {
             directories.len()
         );
 
-        // Convert to our FileEntry format
+        // Convert to our FileEntry format with progress for large datasets
+        if files.len() > 1000 {
+            tracing::info!("Processing large file dataset ({} files)...", files.len());
+        }
         let file_entries = MsiTables::convert_to_file_entries(files, directories);
 
         Ok(file_entries)
@@ -114,12 +120,19 @@ impl MsiAnalyzer {
     async fn extract_msi_registry(&self, file_path: &Path) -> Result<Vec<RegistryOperation>> {
         let db = MsiDatabase::open(file_path)?;
 
-        // Query Registry table
+        // Query Registry table with progress logging
+        tracing::info!("Querying MSI Registry table...");
         let registry_entries = MsiTables::query_registry(&db)?;
 
         tracing::info!("Found {} registry entries in MSI", registry_entries.len());
 
-        // Convert to our RegistryOperation format
+        // Convert to our RegistryOperation format with progress for large datasets
+        if registry_entries.len() > 500 {
+            tracing::info!(
+                "Processing large registry dataset ({} entries)...",
+                registry_entries.len()
+            );
+        }
         let operations = MsiTables::convert_to_registry_operations(registry_entries);
 
         Ok(operations)

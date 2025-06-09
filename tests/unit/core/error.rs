@@ -9,7 +9,10 @@ mod tests {
     #[test]
     fn test_analyzer_error_display() {
         let error = AnalyzerError::unsupported_format("test");
-        assert_eq!(error.to_string(), "Unsupported file format: test");
+        assert_eq!(
+            error.to_string(),
+            "Analysis Error: Unsupported file format - test"
+        );
     }
 
     #[test]

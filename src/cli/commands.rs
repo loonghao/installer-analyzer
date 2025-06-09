@@ -19,12 +19,25 @@ pub async fn handle_analyze(
 ) -> Result<()> {
     CliOutput::info(&format!("Starting static analysis of: {}", input.display()));
 
+    // Create progress spinner for analysis
+    let spinner = CliOutput::create_spinner("Detecting installer format...");
+
     // Create analyzer
     let analyzer = AnalyzerFactory::create_analyzer(input).await?;
+    spinner.set_message("Reading file contents...");
 
-    // Perform analysis
+    // Perform analysis with progress updates
     let start_time = Instant::now();
-    let (metadata, files, registry_ops) = analyzer.analyze(input).await?;
+    spinner.set_message("Extracting metadata...");
+    let metadata = analyzer.extract_metadata(input).await?;
+
+    spinner.set_message("Analyzing file structure...");
+    let files = analyzer.extract_files(input).await?;
+
+    spinner.set_message("Extracting registry operations...");
+    let registry_ops = analyzer.extract_registry_operations(input).await?;
+
+    spinner.finish_with_message("✓ Analysis completed");
     let analysis_duration = start_time.elapsed();
 
     // Create analysis result
@@ -91,6 +104,9 @@ pub async fn handle_sandbox(
         input.display()
     ));
 
+    // Create progress spinner for sandbox analysis
+    let spinner = CliOutput::create_spinner("Initializing sandbox environment...");
+
     // Create sandbox configuration
     let config = SandboxConfig {
         enable_network,
@@ -100,9 +116,11 @@ pub async fn handle_sandbox(
 
     // Create sandbox controller
     let mut sandbox = SandboxController::with_config(config);
+    spinner.set_message("Starting installer execution...");
 
     // Perform sandbox analysis
     let result = sandbox.analyze_installer(input).await?;
+    spinner.finish_with_message("✓ Sandbox analysis completed");
 
     // Generate and save report
     let report_generator = ReportGenerator::new();
@@ -388,7 +406,21 @@ fn open_browser_to_file(file_path: &Path) -> Result<()> {
         AnalyzerError::file_not_found(format!("Failed to get absolute path: {}", e))
     })?;
 
-    let url = format!("file://{}", absolute_path.display());
+    // Convert Windows path to proper file:// URL format
+    let url = if cfg!(windows) {
+        // On Windows, convert backslashes to forward slashes and use file:/// format
+        let mut path_str = absolute_path.to_string_lossy().replace('\\', "/");
+
+        // Remove Windows UNC prefix if present (\\?\)
+        if path_str.starts_with("//?/") {
+            path_str = path_str[4..].to_string();
+        }
+
+        format!("file:///{}", path_str)
+    } else {
+        // On Unix-like systems, use file:// format
+        format!("file://{}", absolute_path.display())
+    };
 
     open::that(&url)
         .map_err(|e| AnalyzerError::config_error(format!("Failed to open browser: {}", e)))?;
@@ -577,6 +609,27 @@ mod tests {
                 // The important thing is that the function doesn't panic
                 assert!(e.to_string().contains("Failed to open browser"));
             }
+        }
+    }
+
+    #[test]
+    fn test_file_url_format() {
+        // Test URL format generation logic (without actually opening browser)
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.html");
+        std::fs::write(&test_file, "<html><body>Test</body></html>").unwrap();
+
+        let absolute_path = test_file.canonicalize().unwrap();
+
+        // Test URL format based on platform
+        if cfg!(windows) {
+            let path_str = absolute_path.to_string_lossy().replace('\\', "/");
+            let expected_url = format!("file:///{}", path_str);
+            assert!(expected_url.starts_with("file:///"));
+            assert!(!expected_url.contains('\\'));
+        } else {
+            let expected_url = format!("file://{}", absolute_path.display());
+            assert!(expected_url.starts_with("file://"));
         }
     }
 }

@@ -58,34 +58,22 @@ impl InnoAnalyzer {
         // Extract metadata using parser
         let parser_metadata = self.parser.extract_metadata(file_path)?;
 
-        // Build metadata structure
-        let product_name = parser_metadata.get("ProductName").cloned().or_else(|| {
-            // Try to extract from filename
-            file_path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .map(|s| {
-                    // Clean up common InnoSetup filename patterns
-                    s.replace("Setup", "")
-                        .replace("setup", "")
-                        .replace("-x64", "")
-                        .replace("-x86", "")
-                        .replace("_", " ")
-                        .trim()
-                        .to_string()
-                })
-                .filter(|s| !s.is_empty())
-        });
+        // Use enhanced metadata extractor for better results
+        let enhanced_metadata = common::MetadataExtractor::extract_enhanced_metadata(
+            file_path,
+            Some(parser_metadata.clone()),
+        )
+        .await?;
 
-        let product_version = parser_metadata
-            .get("ProductVersion")
-            .cloned()
-            .or_else(|| parser_metadata.get("FileVersion").cloned());
+        tracing::info!(
+            "Enhanced metadata extraction completed with confidence score: {:.2}",
+            enhanced_metadata.confidence_score
+        );
 
-        let manufacturer = parser_metadata
-            .get("CompanyName")
-            .cloned()
-            .or_else(|| Some("Unknown Publisher".to_string()));
+        // Build metadata structure from enhanced results
+        let product_name = enhanced_metadata.product_name;
+        let product_version = enhanced_metadata.product_version;
+        let manufacturer = enhanced_metadata.manufacturer;
 
         // Combine all properties
         let mut properties = parser_metadata;
@@ -93,6 +81,24 @@ impl InnoAnalyzer {
         properties.insert(
             "analyzer_version".to_string(),
             env!("CARGO_PKG_VERSION").to_string(),
+        );
+
+        // Add enhanced metadata to properties
+        if let Some(desc) = &enhanced_metadata.file_description {
+            properties.insert("FileDescription".to_string(), desc.clone());
+        }
+        if let Some(internal) = &enhanced_metadata.internal_name {
+            properties.insert("InternalName".to_string(), internal.clone());
+        }
+        if let Some(original) = &enhanced_metadata.original_filename {
+            properties.insert("OriginalFilename".to_string(), original.clone());
+        }
+        if let Some(copyright) = &enhanced_metadata.legal_copyright {
+            properties.insert("LegalCopyright".to_string(), copyright.clone());
+        }
+        properties.insert(
+            "MetadataConfidence".to_string(),
+            enhanced_metadata.confidence_score.to_string(),
         );
 
         Ok(InstallerMetadata {

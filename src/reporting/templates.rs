@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 /// Get the embedded HTML template
 pub fn get_report_template() -> &'static str {
-    // Use relative path from src/reporting/ to templates/
+    // Use the template from templates directory
     include_str!("../../templates/report.html")
 }
 
@@ -616,5 +616,114 @@ impl ReportTemplateData {
         } else {
             "fas fa-file text-muted".to_string()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::{FileAttributes, FileEntry};
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_file_tree_building() {
+        let files = vec![
+            FileEntry {
+                path: PathBuf::from("app/main.exe"),
+                target_path: None,
+                size: 1024,
+                hash: None,
+                attributes: FileAttributes {
+                    readonly: false,
+                    hidden: false,
+                    system: false,
+                    executable: true,
+                },
+                compression: None,
+            },
+            FileEntry {
+                path: PathBuf::from("app/config/settings.ini"),
+                target_path: None,
+                size: 512,
+                hash: None,
+                attributes: FileAttributes {
+                    readonly: false,
+                    hidden: false,
+                    system: false,
+                    executable: false,
+                },
+                compression: None,
+            },
+            FileEntry {
+                path: PathBuf::from("docs/readme.txt"),
+                target_path: None,
+                size: 256,
+                hash: None,
+                attributes: FileAttributes {
+                    readonly: false,
+                    hidden: false,
+                    system: false,
+                    executable: false,
+                },
+                compression: None,
+            },
+        ];
+
+        let tree_data = ReportTemplateData::build_file_tree(&files);
+
+        // Should have 2 root directories: app and docs
+        assert_eq!(tree_data.nodes.len(), 2);
+        assert_eq!(tree_data.total_files, 3);
+        assert_eq!(tree_data.total_directories, 3); // app, config, docs
+
+        // Check app directory
+        let app_node = tree_data.nodes.iter().find(|n| n.name == "app").unwrap();
+        assert!(app_node.is_directory);
+        assert_eq!(app_node.children.len(), 2); // main.exe and config directory
+
+        // Check config subdirectory
+        let config_node = app_node
+            .children
+            .iter()
+            .find(|n| n.name == "config")
+            .unwrap();
+        assert!(config_node.is_directory);
+        assert_eq!(config_node.children.len(), 1); // settings.ini
+
+        // Check file properties
+        let main_exe = app_node
+            .children
+            .iter()
+            .find(|n| n.name == "main.exe")
+            .unwrap();
+        assert!(!main_exe.is_directory);
+        assert_eq!(main_exe.size, 1024);
+        assert_eq!(main_exe.file_type, "executable");
+        assert_eq!(main_exe.icon_class, "fas fa-cog text-danger");
+    }
+
+    #[test]
+    fn test_file_tree_json_serialization() {
+        let files = vec![FileEntry {
+            path: PathBuf::from("test.txt"),
+            target_path: None,
+            size: 100,
+            hash: None,
+            attributes: FileAttributes {
+                readonly: false,
+                hidden: false,
+                system: false,
+                executable: false,
+            },
+            compression: None,
+        }];
+
+        let tree_data = ReportTemplateData::build_file_tree(&files);
+        let json_result = serde_json::to_string(&tree_data);
+
+        assert!(json_result.is_ok());
+        let json_str = json_result.unwrap();
+        assert!(json_str.contains("test.txt"));
+        assert!(json_str.contains("\"total_files\":1"));
     }
 }
