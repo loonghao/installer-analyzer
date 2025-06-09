@@ -15,6 +15,27 @@ impl ReportGenerator {
     pub fn new() -> Self {
         let mut handlebars = Handlebars::new();
 
+        // Register JSON helper for template data injection
+        handlebars.register_helper(
+            "json",
+            Box::new(
+                |h: &handlebars::Helper,
+                 _: &Handlebars,
+                 _: &handlebars::Context,
+                 _: &mut handlebars::RenderContext,
+                 out: &mut dyn handlebars::Output| {
+                    let value = h.param(0).unwrap();
+                    let json_str = serde_json::to_string(value.value()).map_err(|e| {
+                        handlebars::RenderError::from(handlebars::RenderErrorReason::Other(
+                            format!("JSON serialization failed: {}", e),
+                        ))
+                    })?;
+                    out.write(&json_str)?;
+                    Ok(())
+                },
+            ),
+        );
+
         // Load embedded template
         let template_str = get_report_template();
         handlebars

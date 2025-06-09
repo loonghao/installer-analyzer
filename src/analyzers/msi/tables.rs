@@ -188,15 +188,9 @@ impl MsiTables {
         files: Vec<FileTableEntry>,
         directories: Vec<DirectoryEntry>,
     ) -> Vec<FileEntry> {
-        // Build directory path mapping
-        let mut dir_map: HashMap<String, String> = HashMap::new();
+        // Build directory hierarchy mapping
+        let dir_hierarchy = Self::build_directory_hierarchy(&directories);
 
-        // First pass: collect all directories
-        for dir in &directories {
-            dir_map.insert(dir.directory.clone(), dir.default_dir.clone());
-        }
-
-        // Second pass: resolve full paths (simplified)
         let mut file_entries = Vec::new();
         for file in files {
             // Parse filename (may contain | separator for short|long names)
@@ -210,8 +204,12 @@ impl MsiTables {
                 file.filename.clone()
             };
 
-            let path = PathBuf::from(&display_name);
-            let target_path = Some(PathBuf::from(format!("TARGETDIR\\{}", display_name)));
+            // Build full path by resolving directory hierarchy
+            // For now, use the deepest directory path available (simplified approach)
+            let full_path = Self::resolve_file_path(&file.component, &display_name, &dir_hierarchy);
+
+            let path = PathBuf::from(&full_path);
+            let target_path = Some(PathBuf::from(format!("TARGETDIR\\{}", full_path)));
 
             let attributes = FileAttributes {
                 readonly: file.attributes.is_some_and(|a| a & 1 != 0),
@@ -231,6 +229,93 @@ impl MsiTables {
         }
 
         file_entries
+    }
+
+    /// Build directory hierarchy mapping from MSI Directory table
+    fn build_directory_hierarchy(directories: &[DirectoryEntry]) -> HashMap<String, String> {
+        let mut dir_map: HashMap<String, String> = HashMap::new();
+        let mut parent_map: HashMap<String, String> = HashMap::new();
+
+        // First pass: collect directory names and parent relationships
+        for dir in directories {
+            // Parse directory name (may contain | separator for short|long names)
+            let dir_name = if dir.default_dir.contains('|') {
+                dir.default_dir
+                    .split('|')
+                    .nth(1)
+                    .unwrap_or(&dir.default_dir)
+                    .to_string()
+            } else {
+                dir.default_dir.clone()
+            };
+
+            dir_map.insert(dir.directory.clone(), dir_name);
+            if let Some(parent) = &dir.directory_parent {
+                parent_map.insert(dir.directory.clone(), parent.clone());
+            }
+        }
+
+        // Second pass: resolve full paths
+        let mut resolved_paths: HashMap<String, String> = HashMap::new();
+        for dir_id in dir_map.keys() {
+            let full_path = Self::resolve_directory_path(dir_id, &dir_map, &parent_map);
+            resolved_paths.insert(dir_id.clone(), full_path);
+        }
+
+        resolved_paths
+    }
+
+    /// Resolve full directory path by walking up the parent hierarchy
+    fn resolve_directory_path(
+        dir_id: &str,
+        dir_map: &HashMap<String, String>,
+        parent_map: &HashMap<String, String>,
+    ) -> String {
+        let mut path_parts = Vec::new();
+        let mut current_id = dir_id;
+
+        // Walk up the directory hierarchy
+        loop {
+            if let Some(dir_name) = dir_map.get(current_id) {
+                // Skip special directories like TARGETDIR
+                if !dir_name.is_empty() && dir_name != "TARGETDIR" && dir_name != "." {
+                    path_parts.push(dir_name.clone());
+                }
+            }
+
+            if let Some(parent_id) = parent_map.get(current_id) {
+                current_id = parent_id;
+            } else {
+                break;
+            }
+        }
+
+        // Reverse to get correct order (root to leaf)
+        path_parts.reverse();
+        path_parts.join("\\")
+    }
+
+    /// Resolve file path within directory structure
+    fn resolve_file_path(
+        _component: &str,
+        filename: &str,
+        dir_hierarchy: &HashMap<String, String>,
+    ) -> String {
+        // For now, use a simplified approach
+        // In a full implementation, we would need to query the Component table
+        // to map components to directories
+
+        // Try to find the deepest (most specific) directory path
+        let deepest_path = dir_hierarchy
+            .values()
+            .filter(|path| !path.is_empty())
+            .max_by_key(|path| path.matches('\\').count());
+
+        if let Some(dir_path) = deepest_path {
+            format!("{}\\{}", dir_path, filename)
+        } else {
+            filename.to_string()
+        }
     }
 
     /// Convert MSI registry entries to our RegistryOperation format
@@ -301,5 +386,97 @@ impl MsiTables {
             RegistryValueType::String,
             RegistryValue::String(value_str.to_string()),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_directory_hierarchy_building() {
+        let directories = vec![
+            DirectoryEntry {
+                directory: "TARGETDIR".to_string(),
+                directory_parent: None,
+                default_dir: "SourceDir".to_string(),
+            },
+            DirectoryEntry {
+                directory: "ProgramFilesFolder".to_string(),
+                directory_parent: Some("TARGETDIR".to_string()),
+                default_dir: "PFiles".to_string(),
+            },
+            DirectoryEntry {
+                directory: "INSTALLDIR".to_string(),
+                directory_parent: Some("ProgramFilesFolder".to_string()),
+                default_dir: "MyApp".to_string(),
+            },
+        ];
+
+        let hierarchy = MsiTables::build_directory_hierarchy(&directories);
+
+        // TARGETDIR should contain "SourceDir" (not skipped because it's not empty, TARGETDIR, or ".")
+        assert_eq!(hierarchy.get("TARGETDIR").unwrap(), "SourceDir");
+
+        // ProgramFilesFolder should be "SourceDir\\PFiles"
+        assert_eq!(
+            hierarchy.get("ProgramFilesFolder").unwrap(),
+            "SourceDir\\PFiles"
+        );
+
+        // INSTALLDIR should be "SourceDir\\PFiles\\MyApp"
+        assert_eq!(
+            hierarchy.get("INSTALLDIR").unwrap(),
+            "SourceDir\\PFiles\\MyApp"
+        );
+    }
+
+    #[test]
+    fn test_file_path_resolution() {
+        let mut dir_hierarchy = HashMap::new();
+        dir_hierarchy.insert("TARGETDIR".to_string(), "".to_string());
+        dir_hierarchy.insert("INSTALLDIR".to_string(), "Program Files\\MyApp".to_string());
+
+        let file_path = MsiTables::resolve_file_path("Component1", "myapp.exe", &dir_hierarchy);
+
+        // Should use the first non-empty directory path
+        assert_eq!(file_path, "Program Files\\MyApp\\myapp.exe");
+    }
+
+    #[test]
+    fn test_convert_to_file_entries_with_hierarchy() {
+        let files = vec![FileTableEntry {
+            file: "File1".to_string(),
+            component: "Component1".to_string(),
+            filename: "app.exe".to_string(),
+            file_size: Some(1024),
+            version: None,
+            language: None,
+            attributes: Some(0),
+            sequence: Some(1),
+        }];
+
+        let directories = vec![
+            DirectoryEntry {
+                directory: "TARGETDIR".to_string(),
+                directory_parent: None,
+                default_dir: "SourceDir".to_string(),
+            },
+            DirectoryEntry {
+                directory: "INSTALLDIR".to_string(),
+                directory_parent: Some("TARGETDIR".to_string()),
+                default_dir: "MyApp".to_string(),
+            },
+        ];
+
+        let file_entries = MsiTables::convert_to_file_entries(files, directories);
+
+        assert_eq!(file_entries.len(), 1);
+        let entry = &file_entries[0];
+
+        // Should have hierarchical path (SourceDir\\MyApp\\app.exe)
+        assert_eq!(entry.path.to_string_lossy(), "SourceDir\\MyApp\\app.exe");
+        assert_eq!(entry.size, 1024);
+        assert!(entry.attributes.executable);
     }
 }

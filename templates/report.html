@@ -54,152 +54,221 @@
             border-radius: 6px;
         }
         
-        .file-tree {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #e2e8f0;
+        /* macOS Finder Column View Styles */
+        .finder-container {
+            background: #f6f6f6;
+            border: 1px solid #d1d1d1;
             border-radius: 8px;
-            background: #ffffff;
-        }
-
-        .file-item {
-            padding: 8px 12px;
-            border-bottom: 1px solid #f1f5f9;
-            transition: background-color 0.2s;
-        }
-
-        .file-item:hover {
-            background-color: #f8fafc;
-        }
-
-        .file-item:last-child {
-            border-bottom: none;
-        }
-
-        /* Enhanced File Tree Styles */
-        .file-tree-container {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: #ffffff;
             overflow: hidden;
-        }
-
-        .file-tree-header {
-            background: #f8fafc;
-            padding: 12px 16px;
-            border-bottom: 1px solid #e2e8f0;
+            height: 500px;
             display: flex;
-            justify-content: between;
-            align-items: center;
         }
 
-        .file-tree-controls {
-            display: flex;
-            gap: 8px;
-        }
-
-        .file-tree-search {
-            flex: 1;
-            max-width: 300px;
-            padding: 6px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
-            font-size: 0.875rem;
-        }
-
-        .file-tree-body {
-            max-height: 500px;
+        .finder-column {
+            min-width: 200px;
+            width: 200px;
+            border-right: 1px solid #d1d1d1;
+            background: white;
             overflow-y: auto;
-            padding: 8px;
+            flex-shrink: 0;
         }
 
-        .tree-node {
-            margin: 2px 0;
+        .finder-column:last-child {
+            border-right: none;
+            flex: 1;
         }
 
-        .tree-node-content {
+        .finder-item {
             display: flex;
             align-items: center;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 4px 12px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            font-size: 13px;
+            line-height: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.1s ease;
             user-select: none;
         }
 
-        .tree-node-content:hover {
-            background-color: #f3f4f6;
+        .finder-item:hover {
+            background-color: #e8f4fd;
         }
 
-        .tree-node-content.selected {
-            background-color: #dbeafe;
+        .finder-item.selected {
+            background-color: #007aff;
+            color: white;
         }
 
-        .tree-node-indent {
-            width: 20px;
-            display: inline-block;
-        }
-
-        .tree-node-toggle {
-            width: 16px;
-            height: 16px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 4px;
-            cursor: pointer;
-            border-radius: 2px;
-            font-size: 12px;
-        }
-
-        .tree-node-toggle:hover {
-            background-color: #e5e7eb;
-        }
-
-        .tree-node-toggle.expanded::before {
-            content: "▼";
-        }
-
-        .tree-node-toggle.collapsed::before {
+        .finder-item.has-children::after {
             content: "▶";
+            margin-left: auto;
+            font-size: 10px;
+            color: #999;
         }
 
-        .tree-node-toggle.leaf {
-            visibility: hidden;
+        .finder-item.selected.has-children::after {
+            color: rgba(255, 255, 255, 0.7);
         }
 
-        .tree-node-icon {
+        .finder-icon {
             margin-right: 8px;
             width: 16px;
             text-align: center;
+            font-size: 14px;
+            flex-shrink: 0;
         }
 
-        .tree-node-label {
+        .finder-label {
             flex: 1;
-            font-size: 0.875rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
         }
 
-        .tree-node-size {
-            font-size: 0.75rem;
-            color: #6b7280;
+        .finder-size {
+            font-size: 11px;
+            color: #999;
             margin-left: 8px;
+            font-variant-numeric: tabular-nums;
         }
 
-        .tree-node-children {
-            margin-left: 20px;
+        .finder-item.selected .finder-size {
+            color: rgba(255, 255, 255, 0.8);
         }
 
-        .tree-node-children.collapsed {
+        /* Scrollbar styling for macOS look */
+        .finder-column::-webkit-scrollbar {
+            width: 15px;
+        }
+
+        .finder-column::-webkit-scrollbar-track {
+            background: #f8f8f8;
+        }
+
+        .finder-column::-webkit-scrollbar-thumb {
+            background: #c0c0c0;
+            border-radius: 0;
+            border: 1px solid #a0a0a0;
+        }
+
+        .finder-column::-webkit-scrollbar-thumb:hover {
+            background: #a0a0a0;
+        }
+
+        .finder-toolbar {
+            background: linear-gradient(to bottom, #f7f7f7, #e8e8e8);
+            border-bottom: 1px solid #d1d1d1;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 200px;
+            height: 24px;
+            padding: 4px 8px 4px 28px;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            font-size: 12px;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+            width: 250px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 11px;
+            pointer-events: none;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 10px;
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 50%;
             display: none;
         }
 
-        .file-tree-stats {
-            padding: 8px 16px;
-            background: #f9fafb;
-            border-top: 1px solid #e2e8f0;
-            font-size: 0.875rem;
-            color: #6b7280;
+        .search-clear:hover {
+            background: #f0f0f0;
+            color: #666;
         }
+
+        .search-results-info {
+            font-size: 11px;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .search-highlight {
+            background: #ffeb3b;
+            padding: 1px 2px;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+
+        .finder-item.search-match {
+            background-color: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+
+        .finder-item.search-match.selected {
+            background-color: #007aff;
+            border-left-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .finder-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .finder-breadcrumb-item {
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            transition: background-color 0.1s ease;
+        }
+
+        .finder-breadcrumb-item:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .finder-breadcrumb-separator {
+            color: #999;
+            font-size: 10px;
+        }
+
+
         
         .progress-custom {
             height: 8px;
@@ -408,95 +477,35 @@
                         </h3>
                     </div>
                     <div class="card-body p-0">
-                        <!-- File Tree Container -->
-                        <div class="file-tree-container">
-                            <div class="file-tree-header">
-                                <div class="file-tree-controls">
-                                    <input type="text" class="file-tree-search" id="fileTreeSearch" placeholder="Search files...">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="expandAllNodes()">
-                                        <i class="fas fa-expand-arrows-alt"></i> Expand All
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="collapseAllNodes()">
-                                        <i class="fas fa-compress-arrows-alt"></i> Collapse All
-                                    </button>
+                        <!-- macOS Finder Column View -->
+                        <div class="finder-toolbar">
+                            <div class="finder-breadcrumb" id="breadcrumb">
+                                <span class="finder-breadcrumb-item" onclick="navigateToRoot()">Root</span>
+                            </div>
+                            <div class="search-container">
+                                <div style="position: relative;">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text"
+                                           class="search-input"
+                                           id="searchInput"
+                                           placeholder="Search files..."
+                                           autocomplete="off">
+                                    <i class="fas fa-times search-clear" id="searchClear" onclick="clearSearch()"></i>
+                                </div>
+                                <div class="search-results-info" id="searchResults">
+                                    {{file_tree.total_files}} files, {{file_tree.total_directories}} directories
                                 </div>
                             </div>
-                            <div class="file-tree-body" id="fileTreeBody">
-                                <!-- Tree nodes will be rendered by JavaScript -->
-                            </div>
-                            <div class="file-tree-stats">
-                                <i class="fas fa-info-circle me-1"></i>
-                                {{file_tree.total_files}} files in {{file_tree.total_directories}} directories
-                            </div>
+                        </div>
+                        <div class="finder-container" id="finderContainer">
+                            <!-- Columns will be dynamically generated -->
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Legacy File Groups (Collapsed by default) -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title mb-0">
-                            <button class="btn btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#legacyFileGroups">
-                                <i class="fas fa-list me-2"></i>
-                                File Groups (Legacy View)
-                            </button>
-                        </h3>
-                    </div>
-                    <div class="collapse" id="legacyFileGroups">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h5><i class="fas fa-cog me-2"></i>Executables ({{file_groups.executables.count}})</h5>
-                                    <div class="file-tree">
-                                        {{#each file_groups.executables.files}}
-                                        <div class="file-item">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <i class="fas fa-cog text-danger me-2"></i>
-                                                    <span class="fw-medium">{{this.name}}</span>
-                                                </div>
-                                                <small class="text-muted">{{this.size_formatted}}</small>
-                                            </div>
-                                        </div>
-                                        {{/each}}
-                                        {{#if file_groups.executables.has_more}}
-                                        <div class="file-item text-center text-muted">
-                                            <small>... and {{file_groups.executables.remaining}} more files</small>
-                                        </div>
-                                        {{/if}}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h5><i class="fas fa-book me-2"></i>Libraries ({{file_groups.libraries.count}})</h5>
-                                    <div class="file-tree">
-                                        {{#each file_groups.libraries.files}}
-                                        <div class="file-item">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <i class="fas fa-book text-primary me-2"></i>
-                                                    <span class="fw-medium">{{this.name}}</span>
-                                                </div>
-                                                <small class="text-muted">{{this.size_formatted}}</small>
-                                            </div>
-                                        </div>
-                                        {{/each}}
-                                        {{#if file_groups.libraries.has_more}}
-                                        <div class="file-item text-center text-muted">
-                                            <small>... and {{file_groups.libraries.remaining}} more files</small>
-                                        </div>
-                                        {{/if}}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
 
         <!-- Registry Section -->
         {{#if registry_operations}}
@@ -590,7 +599,7 @@
         </footer>
     </div>
 
-    <!-- Tree Node Template -->
+    <!-- Tree Node Template (unused - JavaScript handles rendering) -->
     <script id="tree-node-template" type="text/x-handlebars-template">
         <div class="tree-node" data-path="{{path}}" data-type="{{file_type}}">
             <div class="tree-node-content" onclick="toggleNode(this)">
@@ -604,9 +613,7 @@
             </div>
             {{#if children}}
             <div class="tree-node-children collapsed">
-                {{#each children}}
-                    {{> tree_node}}
-                {{/each}}
+                <!-- Children will be rendered by JavaScript -->
             </div>
             {{/if}}
         </div>
@@ -652,21 +659,25 @@
             });
         }
 
-        // File Tree Functionality
+        // File Tree Functionality (macOS Finder horizontal list style)
         function toggleNode(element) {
             const treeNode = element.closest('.tree-node');
             const toggle = element.querySelector('.tree-node-toggle');
-            const children = treeNode.querySelector('.tree-node-children');
+            const nodePath = treeNode.dataset.path;
 
-            if (children && !toggle.classList.contains('leaf')) {
-                if (toggle.classList.contains('collapsed')) {
-                    toggle.classList.remove('collapsed');
-                    toggle.classList.add('expanded');
-                    children.classList.remove('collapsed');
-                } else {
+            if (!toggle.classList.contains('leaf')) {
+                const isExpanded = toggle.classList.contains('expanded');
+
+                if (isExpanded) {
+                    // Collapse: hide all descendant nodes
                     toggle.classList.remove('expanded');
                     toggle.classList.add('collapsed');
-                    children.classList.add('collapsed');
+                    hideDescendants(nodePath);
+                } else {
+                    // Expand: show direct children
+                    toggle.classList.remove('collapsed');
+                    toggle.classList.add('expanded');
+                    showDirectChildren(nodePath);
                 }
             }
 
@@ -677,13 +688,44 @@
             element.classList.add('selected');
         }
 
+        function hideDescendants(parentPath) {
+            const allNodes = document.querySelectorAll('.tree-node');
+            allNodes.forEach(node => {
+                const nodePath = node.dataset.path;
+                if (nodePath !== parentPath && nodePath.startsWith(parentPath + '/')) {
+                    node.style.display = 'none';
+                    // Also collapse any expanded descendants
+                    const toggle = node.querySelector('.tree-node-toggle');
+                    if (toggle && toggle.classList.contains('expanded')) {
+                        toggle.classList.remove('expanded');
+                        toggle.classList.add('collapsed');
+                    }
+                }
+            });
+        }
+
+        function showDirectChildren(parentPath) {
+            const allNodes = document.querySelectorAll('.tree-node');
+            allNodes.forEach(node => {
+                const nodePath = node.dataset.path;
+                if (nodePath.startsWith(parentPath + '/')) {
+                    const relativePath = nodePath.substring(parentPath.length + 1);
+                    // Only show direct children (no additional slashes)
+                    if (!relativePath.includes('/')) {
+                        node.style.display = '';
+                    }
+                }
+            });
+        }
+
         function expandAllNodes() {
             document.querySelectorAll('.tree-node-toggle.collapsed').forEach(toggle => {
                 toggle.classList.remove('collapsed');
                 toggle.classList.add('expanded');
             });
-            document.querySelectorAll('.tree-node-children.collapsed').forEach(children => {
-                children.classList.remove('collapsed');
+            // Show all nodes
+            document.querySelectorAll('.tree-node').forEach(node => {
+                node.style.display = '';
             });
         }
 
@@ -692,69 +734,142 @@
                 toggle.classList.remove('expanded');
                 toggle.classList.add('collapsed');
             });
-            document.querySelectorAll('.tree-node-children').forEach(children => {
-                children.classList.add('collapsed');
+            // Hide all non-root nodes
+            document.querySelectorAll('.tree-node').forEach(node => {
+                const nodePath = node.dataset.path;
+                if (nodePath && nodePath.includes('/')) {
+                    node.style.display = 'none';
+                }
             });
         }
 
-        // File Tree Search
-        document.getElementById('fileTreeSearch')?.addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
+        // Truncate long paths for display
+        function truncatePath(path, maxLevels = 5) {
+            if (!path) return '';
+
+            const parts = path.split('/').filter(part => part.length > 0);
+            if (parts.length <= maxLevels) {
+                return path;
+            }
+
+            const start = parts.slice(0, 2);
+            const end = parts.slice(-1);
+            return '/' + start.join('/') + '/.../' + end.join('/');
+        }
+
+        // Apply filters to file tree
+        function applyFilters() {
+            const searchTerm = document.getElementById('fileTreeSearch')?.value.toLowerCase() || '';
+            const extensionFilter = document.getElementById('fileExtensionFilter')?.value || '';
             const treeNodes = document.querySelectorAll('.tree-node');
+            let visibleCount = 0;
+            let totalCount = 0;
 
             treeNodes.forEach(node => {
                 const label = node.querySelector('.tree-node-label')?.textContent.toLowerCase() || '';
                 const path = node.dataset.path?.toLowerCase() || '';
+                const isDirectory = node.dataset.type === 'directory';
 
-                if (searchTerm === '' || label.includes(searchTerm) || path.includes(searchTerm)) {
+                totalCount++;
+
+                // Check search term match
+                const searchMatch = searchTerm === '' || label.includes(searchTerm) || path.includes(searchTerm);
+
+                // Check extension filter match
+                let extensionMatch = true;
+                if (extensionFilter && !isDirectory) {
+                    extensionMatch = label.endsWith(extensionFilter.toLowerCase());
+                }
+
+                const shouldShow = searchMatch && extensionMatch;
+
+                if (shouldShow || isDirectory) {
                     node.style.display = '';
-                    // Show parent nodes
-                    let parent = node.parentElement;
-                    while (parent && parent.classList.contains('tree-node-children')) {
-                        parent.style.display = '';
-                        parent.classList.remove('collapsed');
-                        const parentToggle = parent.parentElement?.querySelector('.tree-node-toggle');
-                        if (parentToggle) {
-                            parentToggle.classList.remove('collapsed');
-                            parentToggle.classList.add('expanded');
+                    if (shouldShow) visibleCount++;
+
+                    // Show parent nodes for matching files
+                    if (shouldShow) {
+                        let parent = node.parentElement;
+                        while (parent && parent.classList.contains('tree-node-children')) {
+                            parent.style.display = '';
+                            parent.classList.remove('collapsed');
+                            const parentToggle = parent.parentElement?.querySelector('.tree-node-toggle');
+                            if (parentToggle) {
+                                parentToggle.classList.remove('collapsed');
+                                parentToggle.classList.add('expanded');
+                            }
+                            parent = parent.parentElement?.parentElement;
                         }
-                        parent = parent.parentElement?.parentElement;
                     }
                 } else {
                     node.style.display = 'none';
                 }
             });
-        });
+
+            // Update filter status
+            const filterStatus = document.getElementById('filterStatus');
+            if (filterStatus) {
+                if (searchTerm || extensionFilter) {
+                    filterStatus.textContent = `${visibleCount} of ${totalCount} files shown`;
+                } else {
+                    filterStatus.textContent = '';
+                }
+            }
+        }
+
+        // Clear all filters
+        function clearFilters() {
+            document.getElementById('fileTreeSearch').value = '';
+            document.getElementById('fileExtensionFilter').value = '';
+            applyFilters();
+        }
+
+        // File Tree Search
+        document.getElementById('fileTreeSearch')?.addEventListener('input', applyFilters);
+        document.getElementById('fileExtensionFilter')?.addEventListener('change', applyFilters);
 
         // File tree data (injected by template)
         const fileTreeData = {{{file_tree_json}}};
 
-        // Render tree node
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Render tree node (macOS Finder horizontal list style)
         function renderTreeNode(node, depth = 0) {
             const hasChildren = node.children && node.children.length > 0;
             const toggleClass = hasChildren ? 'collapsed' : 'leaf';
-            const indentSpans = '    '.repeat(depth);
+            const isDirectory = node.is_directory || node.file_type === 'folder';
+
+            // For files, show truncated path; for directories, show just name
+            const displayName = isDirectory ? node.name : truncatePath(node.path);
+            const fullPath = node.path || node.name;
+
+            // Calculate indentation for macOS Finder horizontal list style
+            const indentPx = depth * 20 + 12; // 20px per level + 12px base padding
 
             let html = `
-                <div class="tree-node" data-path="${node.path}" data-type="${node.file_type}">
-                    <div class="tree-node-content" onclick="toggleNode(this)" style="padding-left: ${depth * 20}px;">
+                <div class="tree-node" data-path="${escapeHtml(fullPath)}" data-type="${escapeHtml(node.file_type)}">
+                    <div class="tree-node-content" onclick="toggleNode(this)" style="padding-left: ${indentPx}px;" title="${escapeHtml(fullPath)}">
                         <span class="tree-node-toggle ${toggleClass}"></span>
                         <span class="tree-node-icon">
-                            <i class="${node.icon_class}"></i>
+                            <i class="${escapeHtml(node.icon_class)}"></i>
                         </span>
-                        <span class="tree-node-label">${node.name}</span>
-                        <span class="tree-node-size">${node.size_formatted}</span>
-                    </div>`;
+                        <span class="tree-node-label">${escapeHtml(displayName)}</span>
+                        <span class="tree-node-size">${escapeHtml(node.size_formatted)}</span>
+                    </div>
+                </div>`;
 
+            // Render children directly after parent (not nested)
             if (hasChildren) {
-                html += `<div class="tree-node-children collapsed">`;
                 node.children.forEach(child => {
                     html += renderTreeNode(child, depth + 1);
                 });
-                html += `</div>`;
             }
 
-            html += `</div>`;
             return html;
         }
 
@@ -762,24 +877,25 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Render file tree
             const fileTreeBody = document.getElementById('fileTreeBody');
+
             if (fileTreeBody && fileTreeData && fileTreeData.nodes) {
                 let html = '';
                 fileTreeData.nodes.forEach(node => {
                     html += renderTreeNode(node);
                 });
+
                 fileTreeBody.innerHTML = html;
 
-                // Auto-expand first level directories
+                // Get all root node paths to determine what should be visible initially
+                const rootPaths = fileTreeData.nodes.map(node => node.path || node.name);
+
+                // Initially hide all non-root nodes (macOS Finder style)
                 document.querySelectorAll('.tree-node').forEach(node => {
-                    const depth = node.dataset.path?.split(/[/\\]/).length || 1;
-                    if (depth <= 2) { // Expand first two levels
-                        const toggle = node.querySelector('.tree-node-toggle');
-                        const children = node.querySelector('.tree-node-children');
-                        if (toggle && children && !toggle.classList.contains('leaf')) {
-                            toggle.classList.remove('collapsed');
-                            toggle.classList.add('expanded');
-                            children.classList.remove('collapsed');
-                        }
+                    const nodePath = node.dataset.path;
+                    const isRootNode = rootPaths.includes(nodePath);
+
+                    if (!isRootNode) {
+                        node.style.display = 'none';
                     }
                 });
             }
