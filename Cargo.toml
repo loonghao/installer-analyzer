@@ -1,6 +1,6 @@
 [package]
 name = "installer-analyzer"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 authors = ["Installer Analyzer Team"]
 description = "A comprehensive tool for analyzing software installation packages and monitoring installation behavior"

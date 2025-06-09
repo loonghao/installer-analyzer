@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/loonghao/installer-analyzer/compare/v0.3.0...v0.4.0) (2025-06-09)
+
+
+### Features
+
+* implement enhanced metadata extraction system ([e4a89bc](https://github.com/loonghao/installer-analyzer/commit/e4a89bc90f45a2df846b8621d145a376d26c9c28))
+
 ## [0.3.0](https://github.com/loonghao/installer-analyzer/compare/v0.2.0...v0.3.0) (2025-06-08)
 
 
