@@ -190,7 +190,23 @@ function buildFileTree(files: any[]): FileNode[] {
     }
   });
 
+  // Calculate directory sizes by summing children
+  calculateDirectorySizes(tree);
+
   return tree;
+}
+
+// Calculate directory sizes recursively
+function calculateDirectorySizes(nodes: FileNode[]): void {
+  nodes.forEach(node => {
+    if (node.is_directory && node.children) {
+      // First calculate sizes for child directories
+      calculateDirectorySizes(node.children);
+
+      // Then sum up all children sizes
+      node.size = node.children.reduce((total, child) => total + child.size, 0);
+    }
+  });
 }
 
 // Render registry operations section
@@ -224,11 +240,11 @@ function renderRegistryOperations() {
     registryTableBody.innerHTML = operations.map(op => `
       <tr>
         <td><span class="badge bg-primary">${escapeHtml(op.operation)}</span></td>
-        <td><code>${escapeHtml(op.key)}</code></td>
-        <td>${op.value ? escapeHtml(op.value) : '-'}</td>
+        <td><code style="font-size: 0.85rem; word-break: break-all;">${escapeHtml(op.key)}</code></td>
+        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${op.value ? escapeHtml(op.value) : '-'}">${op.value ? escapeHtml(op.value) : '-'}</td>
         <td>
           <button class="copy-btn" onclick="copyToClipboard('${escapeHtml(op.key)}')">
-            <i class="fas fa-copy me-1"></i>Copy
+            <i class="fas fa-copy"></i>
           </button>
         </td>
       </tr>
@@ -305,7 +321,7 @@ function createFinderColumn(items: FileNode[], path: string[]): HTMLElement {
 
     itemElement.innerHTML = `
       <span class="finder-icon"><i class="${item.icon_class}"></i></span>
-      <span class="finder-label">${escapeHtml(item.name)}</span>
+      <span class="finder-label" title="${escapeHtml(item.path)}">${escapeHtml(item.name)}</span>
       <span class="finder-size">${formatFileSize(item.size)}</span>
     `;
 
@@ -333,6 +349,18 @@ function createFinderColumn(items: FileNode[], path: string[]): HTMLElement {
         const newColumn = createFinderColumn(item.children, newPath);
         container.appendChild(newColumn);
       }
+    });
+
+    // Add right-click context menu for copying path
+    itemElement.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      copyToClipboard(item.path);
+    });
+
+    // Add double-click to copy path
+    itemElement.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      copyToClipboard(item.path);
     });
 
     column.appendChild(itemElement);
@@ -393,11 +421,55 @@ function truncatePath(path: string, maxLevels: number = 5): string {
 
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text).then(() => {
-    // Could add a toast notification here
-    console.log('Copied to clipboard:', text);
+    showToast('Copied to clipboard!', 'success');
   }).catch(err => {
     console.error('Failed to copy:', err);
+    showToast('Failed to copy to clipboard', 'error');
   });
+}
+
+// Show toast notification
+function showToast(message: string, type: 'success' | 'error' = 'success') {
+  // Remove existing toasts
+  const existingToasts = document.querySelectorAll('.toast-notification');
+  existingToasts.forEach(toast => toast.remove());
+
+  const toast = document.createElement('div');
+  toast.className = `toast-notification toast-${type}`;
+  toast.textContent = message;
+
+  // Add styles
+  Object.assign(toast.style, {
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    padding: '12px 20px',
+    borderRadius: '6px',
+    color: 'white',
+    fontWeight: '500',
+    fontSize: '14px',
+    zIndex: '9999',
+    opacity: '0',
+    transform: 'translateY(-20px)',
+    transition: 'all 0.3s ease',
+    backgroundColor: type === 'success' ? '#059669' : '#dc2626',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+  });
+
+  document.body.appendChild(toast);
+
+  // Animate in
+  setTimeout(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+  }, 10);
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-20px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 
 // Make copyToClipboard available globally
