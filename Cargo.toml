@@ -72,3 +72,26 @@ colored = "3.0"         # Cross-platform colored terminal text
 [dev-dependencies]
 tempfile = "3.0"
 futures = "0.3"
+
+# Build profiles for optimization
+[profile.release]
+# Standard release build
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+opt-level = 3
+
+# PGO optimized profile for maximum performance
+[profile.release-pgo]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+opt-level = 3
+
+# Profile for PGO data collection
+[profile.release-pgo-gen]
+inherits = "release"
+debug = true
+lto = false
+codegen-units = 16
