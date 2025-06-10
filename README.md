@@ -328,7 +328,6 @@ This project builds upon the excellent work of the Rust community and several ke
 - [clap](https://crates.io/crates/clap) - Command line argument parsing
 
 ### Additional Libraries
-- [handlebars](https://crates.io/crates/handlebars) - HTML template rendering
 - [tracing](https://crates.io/crates/tracing) - Structured logging and diagnostics
 - [chrono](https://crates.io/crates/chrono) - Date and time handling
 - [uuid](https://crates.io/crates/uuid) - UUID generation for session tracking
