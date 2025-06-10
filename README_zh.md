@@ -328,7 +328,6 @@ cargo build --release --target x86_64-pc-windows-msvc
 - [clap](https://crates.io/crates/clap) - 命令行参数解析
 
 ### 其他库
-- [handlebars](https://crates.io/crates/handlebars) - HTML 模板渲染
 - [tracing](https://crates.io/crates/tracing) - 结构化日志和诊断
 - [chrono](https://crates.io/crates/chrono) - 日期和时间处理
 - [uuid](https://crates.io/crates/uuid) - 会话跟踪的 UUID 生成
