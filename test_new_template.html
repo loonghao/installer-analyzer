@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installer Analysis Report</title>
+
+    <!-- CDN Dependencies -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --dark-color: #1e293b;
+        }
+
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 12px 12px 0 0 !important;
+        }
+
+        .badge-custom {
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+        }
+
+        /* macOS Finder Column View Styles */
+        .finder-container {
+            background: #f6f6f6;
+            border: 1px solid #d1d1d1;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 500px;
+            display: flex;
+        }
+
+        .finder-column {
+            min-width: 200px;
+            width: 200px;
+            border-right: 1px solid #d1d1d1;
+            background: white;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .finder-column:last-child {
+            border-right: none;
+            flex: 1;
+        }
+
+        .finder-item {
+            display: flex;
+            align-items: center;
+            padding: 4px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.1s ease;
+            user-select: none;
+        }
+
+        .finder-item:hover {
+            background-color: #e8f4fd;
+        }
+
+        .finder-item.selected {
+            background-color: #007aff;
+            color: white;
+        }
+
+        .finder-item.has-children::after {
+            content: "▶";
+            margin-left: auto;
+            font-size: 10px;
+            color: #999;
+        }
+
+        .finder-item.selected.has-children::after {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .finder-icon {
+            margin-right: 8px;
+            width: 16px;
+            text-align: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .finder-label {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .finder-size {
+            font-size: 11px;
+            color: #999;
+            margin-left: 8px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .finder-item.selected .finder-size {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .finder-toolbar {
+            background: linear-gradient(to bottom, #f7f7f7, #e8e8e8);
+            border-bottom: 1px solid #d1d1d1;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 200px;
+            height: 24px;
+            padding: 4px 8px 4px 28px;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            font-size: 12px;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+            width: 250px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 11px;
+            pointer-events: none;
+        }
+
+        .copy-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .metric-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: var(--secondary-color);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .code-hash {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+  <script type="module" crossorigin>(function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))s(t);new MutationObserver(t=>{for(const r of t)if(r.type==="childList")for(const o of r.addedNodes)o.tagName==="LINK"&&o.rel==="modulepreload"&&s(o)}).observe(document,{childList:!0,subtree:!0});function i(t){const r={};return t.integrity&&(r.integrity=t.integrity),t.referrerPolicy&&(r.referrerPolicy=t.referrerPolicy),t.crossOrigin==="use-credentials"?r.credentials="include":t.crossOrigin==="anonymous"?r.credentials="omit":r.credentials="same-origin",r}function s(t){if(t.ep)return;t.ep=!0;const r=i(t);fetch(t.href,r)}})();let c=null;function b(){typeof window.ANALYSIS_DATA<"u"?(c=window.ANALYSIS_DATA,h()):E(),L();const e=new Date,n=document.getElementById("generated-time");n&&(n.textContent=e.toLocaleString())}function E(){c={metadata:{filename:"sample-installer.msi",file_size:1024e3,format:"MSI",version:"1.0.0",publisher:"Sample Publisher",description:"Sample installer package"},files:[{path:"Program Files",size:0,type:"folder",is_directory:!0,icon_class:"fas fa-folder"},{path:"Program Files/App",size:0,type:"folder",is_directory:!0,icon_class:"fas fa-folder"},{path:"Program Files/App/app.exe",size:512e3,type:"executable",is_directory:!1,icon_class:"fas fa-cog"},{path:"Program Files/App/config.ini",size:1024,type:"config",is_directory:!1,icon_class:"fas fa-file-alt"},{path:"Program Files/App/readme.txt",size:2048,type:"text",is_directory:!1,icon_class:"fas fa-file-text"},{path:"System32",size:0,type:"folder",is_directory:!0,icon_class:"fas fa-folder"},{path:"System32/driver.sys",size:32768,type:"driver",is_directory:!1,icon_class:"fas fa-microchip"}],registry_operations:[{operation:"CREATE",key:"HKLM\\Software\\App",value:"InstallPath"},{operation:"SET",key:"HKLM\\Software\\App\\Version",value:"1.0.0"}]},h()}function h(){c&&(S(),v(),C(),_())}function S(){if(!c)return;const e=c.metadata,n=document.getElementById("product-name");n&&(n.textContent=e.filename||"Package Analysis"),a("filename",e.filename),a("version",e.version||"N/A"),a("publisher",e.publisher||"N/A"),a("format",e.format),a("file-size",u(e.file_size)),a("description",e.description||"N/A")}function v(){if(!c)return;const e=c.files||[],n=c.registry_operations||[],i=e.filter(r=>!r.is_directory).length,s=e.filter(r=>r.type==="executable").length,t=e.reduce((r,o)=>r+o.size,0);a("total-files",i.toString()),a("registry-ops",n.length.toString()),a("executables",s.toString()),a("total-size",u(t)),a("file-count",i.toString()),a("file-count-display",`${i} files`)}function C(){const e=document.getElementById("finderContainer");if(!e||!c)return;const n=c.files||[],i=x(n),s=g(i,[]);e.innerHTML="",e.appendChild(s)}function x(e){const n=[],i=new Map;return e.sort((s,t)=>{const r=s.path.split("/").length,o=t.path.split("/").length;return r!==o?r-o:s.path.localeCompare(t.path)}),e.forEach(s=>{const t=s.path.split("/"),o={name:t[t.length-1],path:s.path,size:s.size,is_directory:s.is_directory||!1,icon_class:s.icon_class||A(s.path,s.is_directory),children:s.is_directory?[]:void 0};if(i.set(s.path,o),t.length===1)n.push(o);else{const l=t.slice(0,-1).join("/"),d=i.get(l);d&&d.children&&d.children.push(o)}}),n}function _(){if(!c)return;const e=c.registry_operations||[],n=document.getElementById("registry-section"),i=document.getElementById("registry-table-body"),s=document.getElementById("registry-count");if(e.length===0){n&&(n.style.display="none");return}n&&(n.style.display="block"),s&&(s.textContent=e.length.toString()),i&&(i.innerHTML=e.map(t=>`
+      <tr>
+        <td><span class="badge bg-primary">${f(t.operation)}</span></td>
+        <td><code>${f(t.key)}</code></td>
+        <td>${t.value?f(t.value):"-"}</td>
+        <td>
+          <button class="copy-btn" onclick="copyToClipboard('${f(t.key)}')">
+            <i class="fas fa-copy me-1"></i>Copy
+          </button>
+        </td>
+      </tr>
+    `).join(""))}function L(){const e=document.getElementById("searchInput");e&&e.addEventListener("input",w)}function w(e){const n=e.target.value.toLowerCase(),i=document.querySelectorAll(".finder-item");let s=0;i.forEach(r=>{var d,m;const l=(((m=(d=r.querySelector(".finder-label"))==null?void 0:d.textContent)==null?void 0:m.toLowerCase())||"").includes(n);if(n===""||l){if(r.classList.remove("hidden"),l&&n!==""){s++;const p=r.querySelector(".finder-label");if(p&&n){const y=(p.textContent||"").replace(new RegExp(`(${z(n)})`,"gi"),"<mark>$1</mark>");p.innerHTML=y}}}else r.classList.add("hidden")});const t=document.getElementById("searchResults");if(t)if(n)t.textContent=`${s} matches found`;else{const r=document.querySelectorAll(".finder-item").length;t.textContent=`${r} files`}}function z(e){return e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function g(e,n){const i=document.createElement("div");return i.className="finder-column",e.forEach(s=>{const t=document.createElement("div");t.className="finder-item",s.children&&s.children.length>0&&t.classList.add("has-children"),t.innerHTML=`
+      <span class="finder-icon"><i class="${s.icon_class}"></i></span>
+      <span class="finder-label">${f(s.name)}</span>
+      <span class="finder-size">${u(s.size)}</span>
+    `,t.addEventListener("click",()=>{i.querySelectorAll(".finder-item.selected").forEach(l=>{l.classList.remove("selected")}),t.classList.add("selected");const r=i.parentElement;let o=i.nextElementSibling;for(;o;){const l=o;o=o.nextElementSibling,r.removeChild(l)}if(s.children&&s.children.length>0){const l=[...n,s.name],d=g(s.children,l);r.appendChild(d)}}),i.appendChild(t)}),i}function A(e,n){var s;if(n)return"fas fa-folder";switch((s=e.split(".").pop())==null?void 0:s.toLowerCase()){case"exe":case"msi":case"dmg":return"fas fa-cog";case"dll":case"so":case"dylib":return"fas fa-puzzle-piece";case"txt":case"md":case"readme":return"fas fa-file-alt";case"pdf":return"fas fa-file-pdf";case"jpg":case"jpeg":case"png":case"gif":return"fas fa-file-image";case"mp3":case"wav":case"ogg":return"fas fa-file-audio";case"mp4":case"avi":case"mov":return"fas fa-file-video";case"zip":case"rar":case"7z":return"fas fa-file-archive";case"js":case"ts":case"py":case"java":case"cpp":return"fas fa-file-code";default:return"fas fa-file"}}function a(e,n){const i=document.getElementById(e);i&&(i.textContent=n)}function f(e){const n=document.createElement("div");return n.textContent=e,n.innerHTML}function u(e){const n=["Bytes","KB","MB","GB"];if(e===0)return"0 Bytes";const i=Math.floor(Math.log(e)/Math.log(1024));return Math.round(e/Math.pow(1024,i)*100)/100+" "+n[i]}function T(e){navigator.clipboard.writeText(e).then(()=>{console.log("Copied to clipboard:",e)}).catch(n=>{console.error("Failed to copy:",n)})}window.copyToClipboard=T;document.addEventListener("DOMContentLoaded",b);</script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-shield-alt me-2"></i>
+                Installer Analysis Report
+            </span>
+            <span class="navbar-text">
+                <i class="fas fa-clock me-1"></i>
+                Generated: <span id="generated-time"></span>
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title mb-0">
+                            <i class="fas fa-box me-2"></i>
+                            <span id="product-name">Package Analysis</span>
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Filename:</strong></td>
+                                        <td id="filename">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Version:</strong></td>
+                                        <td id="version">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Publisher:</strong></td>
+                                        <td id="publisher">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Format:</strong></td>
+                                        <td><span class="badge bg-primary" id="format">-</span></td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>File Size:</strong></td>
+                                        <td id="file-size">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Description:</strong></td>
+                                        <td id="description">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Analysis Type:</strong></td>
+                                        <td>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-search me-1"></i>
+                                                Static Analysis
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Analysis Summary
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-primary" id="total-files">0</div>
+                                    <div class="metric-label">Total Files</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-success" id="registry-ops">0</div>
+                                    <div class="metric-label">Registry Operations</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-warning" id="executables">0</div>
+                                    <div class="metric-label">Executables</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-info" id="total-size">0</div>
+                                    <div class="metric-label">Total Size</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Files Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-folder-open me-2"></i>
+                            File Structure (<span id="file-count">0</span> files)
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- macOS Finder Column View -->
+                        <div class="finder-toolbar">
+                            <div class="search-container">
+                                <div style="position: relative;">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text"
+                                           class="search-input"
+                                           id="searchInput"
+                                           placeholder="Search files..."
+                                           autocomplete="off">
+                                </div>
+                                <div class="search-results-info" id="searchResults">
+                                    <span id="file-count-display">0 files</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="finder-container" id="finderContainer">
+                            <!-- File tree will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registry Section -->
+        <div class="row mb-4" id="registry-section" style="display: none;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-database me-2"></i>
+                            Registry Operations (<span id="registry-count">0</span> operations)
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Operation</th>
+                                        <th>Key Path</th>
+                                        <th>Value</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="registry-table-body">
+                                    <!-- Registry operations will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center py-4 text-muted">
+            <p>Report generated by Installer Analyzer | <span id="session-info"></span></p>
+        </footer>
+    </div>
+
+    <!-- CDN Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

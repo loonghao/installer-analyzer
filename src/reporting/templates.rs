@@ -7,8 +7,8 @@ use std::collections::HashMap;
 
 /// Get the embedded HTML template
 pub fn get_report_template() -> &'static str {
-    // Use the template from templates directory
-    include_str!("../../templates/report.html")
+    // Use the built frontend template from dist/
+    include_str!("../../frontend/dist/template.html")
 }
 
 /// Template data for HTML report generation
