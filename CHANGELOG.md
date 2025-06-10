@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.5.0](https://github.com/loonghao/installer-analyzer/compare/v0.4.0...v0.5.0) (2025-06-10)
+
+
+### Features
+
+* add Profile-Guided Optimization (PGO) build support ([111ff2d](https://github.com/loonghao/installer-analyzer/commit/111ff2d03e8c9c55933df3ae0889d022acef733a))
+* enhance UI with improved copy functionality and compact layout ([9f9a267](https://github.com/loonghao/installer-analyzer/commit/9f9a267cd02d59bd6c9ae5965e795ee974affece))
+* implement unified data structure with original filename and SHA256 display ([0c16c97](https://github.com/loonghao/installer-analyzer/commit/0c16c972691fe547211f1bfb33c3f8f853b11dfb))
+* restore modern web frontend with Bootstrap and macOS Finder style ([fc076f0](https://github.com/loonghao/installer-analyzer/commit/fc076f0cfc1935bf1bc43836464d6843603b1c02))
+
+
+### Bug Fixes
+
+* add missing frontend configuration files to Git ([683fa00](https://github.com/loonghao/installer-analyzer/commit/683fa004828f8e7627ba624f4538e953d16e472b))
+* improve npm detection in build script for CI compatibility ([95c3c8d](https://github.com/loonghao/installer-analyzer/commit/95c3c8d8c87ac3b67b3c3a176faf0638135a003a))
+* specify correct Rust toolchain for CI commands ([693b351](https://github.com/loonghao/installer-analyzer/commit/693b351cb4f94a7ada09f8786de8173b90d137fb))
+* update GitHub Actions to use latest versions ([f52d98d](https://github.com/loonghao/installer-analyzer/commit/f52d98d8aeac1e306baa1238f59a2aec86110921))
+
 ## [0.4.0](https://github.com/loonghao/installer-analyzer/compare/v0.3.0...v0.4.0) (2025-06-09)
 
 
