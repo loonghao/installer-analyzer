@@ -43,6 +43,7 @@ pub async fn handle_analyze(
     // Create analysis result
     let result = AnalysisResult {
         session_id: Uuid::new_v4(),
+        source_file_path: Some(input.to_path_buf()),
         metadata,
         files,
         registry_operations: registry_ops,

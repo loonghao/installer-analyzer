@@ -192,6 +192,8 @@ pub enum NetworkOpType {
 pub struct AnalysisResult {
     /// Unique analysis session ID
     pub session_id: Uuid,
+    /// Source file path (for basename extraction)
+    pub source_file_path: Option<PathBuf>,
     /// Installer metadata
     pub metadata: InstallerMetadata,
     /// Extracted files

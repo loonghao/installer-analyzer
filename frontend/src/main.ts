@@ -2,7 +2,9 @@
 interface AnalysisData {
   metadata: {
     filename: string;
+    original_filename: string;
     file_size: number;
+    file_hash: string;
     format: string;
     version?: string;
     publisher?: string;
@@ -57,30 +59,21 @@ function init() {
   }
 }
 
-// Load sample data for development
+// Load sample data for development (fallback when no real data is injected)
 function loadSampleData() {
   analysisData = {
     metadata: {
-      filename: "sample-installer.msi",
-      file_size: 1024000,
-      format: "MSI",
-      version: "1.0.0",
-      publisher: "Sample Publisher",
-      description: "Sample installer package"
+      filename: "No Analysis Data",
+      original_filename: "No Analysis Data",
+      file_size: 0,
+      file_hash: "No data available - please analyze an installer file",
+      format: "Unknown",
+      version: "N/A",
+      publisher: "N/A",
+      description: "No installer has been analyzed yet"
     },
-    files: [
-      { path: "Program Files", size: 0, type: "folder", is_directory: true, icon_class: "fas fa-folder" },
-      { path: "Program Files/App", size: 0, type: "folder", is_directory: true, icon_class: "fas fa-folder" },
-      { path: "Program Files/App/app.exe", size: 512000, type: "executable", is_directory: false, icon_class: "fas fa-cog" },
-      { path: "Program Files/App/config.ini", size: 1024, type: "config", is_directory: false, icon_class: "fas fa-file-alt" },
-      { path: "Program Files/App/readme.txt", size: 2048, type: "text", is_directory: false, icon_class: "fas fa-file-text" },
-      { path: "System32", size: 0, type: "folder", is_directory: true, icon_class: "fas fa-folder" },
-      { path: "System32/driver.sys", size: 32768, type: "driver", is_directory: false, icon_class: "fas fa-microchip" }
-    ],
-    registry_operations: [
-      { operation: "CREATE", key: "HKLM\\Software\\App", value: "InstallPath" },
-      { operation: "SET", key: "HKLM\\Software\\App\\Version", value: "1.0.0" }
-    ]
+    files: [],
+    registry_operations: []
   };
   renderReport();
 }
@@ -108,11 +101,13 @@ function renderBasicInfo() {
   }
 
   // Update metadata fields
+  updateElementText('original-filename', metadata.original_filename);
   updateElementText('filename', metadata.filename);
   updateElementText('version', metadata.version || 'N/A');
   updateElementText('publisher', metadata.publisher || 'N/A');
   updateElementText('format', metadata.format);
   updateElementText('file-size', formatFileSize(metadata.file_size));
+  updateElementText('file-hash', metadata.file_hash);
   updateElementText('description', metadata.description || 'N/A');
 }
 
