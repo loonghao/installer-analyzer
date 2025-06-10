@@ -26,7 +26,22 @@ fn main() {
     let node_modules = frontend_dir.join("node_modules");
     if !node_modules.exists() {
         println!("cargo:warning=Installing frontend dependencies...");
-        let npm_install = Command::new("npm")
+
+        // Try to find npm executable
+        let npm_cmd = if cfg!(target_os = "windows") {
+            // On Windows, try both npm.cmd and npm
+            if Command::new("npm.cmd").arg("--version").output().is_ok() {
+                "npm.cmd"
+            } else if Command::new("npm").arg("--version").output().is_ok() {
+                "npm"
+            } else {
+                panic!("npm not found. Please ensure Node.js is installed and npm is in PATH.");
+            }
+        } else {
+            "npm"
+        };
+
+        let npm_install = Command::new(npm_cmd)
             .args(["install"])
             .current_dir(&frontend_dir)
             .status()
@@ -65,7 +80,22 @@ fn main() {
 
     if should_build {
         println!("cargo:warning=Building frontend...");
-        let npm_build = Command::new("npm")
+
+        // Try to find npm executable
+        let npm_cmd = if cfg!(target_os = "windows") {
+            // On Windows, try both npm.cmd and npm
+            if Command::new("npm.cmd").arg("--version").output().is_ok() {
+                "npm.cmd"
+            } else if Command::new("npm").arg("--version").output().is_ok() {
+                "npm"
+            } else {
+                panic!("npm not found. Please ensure Node.js is installed and npm is in PATH.");
+            }
+        } else {
+            "npm"
+        };
+
+        let npm_build = Command::new(npm_cmd)
             .args(["run", "build"])
             .current_dir(&frontend_dir)
             .status()
