@@ -34,6 +34,11 @@ test_*_report.html
 *-report.html
 *-analysis.json
 
+# Allow frontend configuration files
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
+
 # Frontend dependencies and build artifacts
 frontend/node_modules/
 frontend/dist/
