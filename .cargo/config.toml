@@ -1,0 +1,47 @@
+# Cargo configuration for faster builds
+
+[build]
+# Use faster linker on Windows
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[target.x86_64-pc-windows-msvc]
+# Use LLD linker for faster linking
+linker = "rust-lld"
+
+[profile.dev]
+# Faster debug builds
+debug = 1
+incremental = true
+codegen-units = 256
+
+[profile.test]
+# Faster test builds
+debug = 1
+incremental = true
+codegen-units = 256
+
+[profile.release]
+# Optimized release builds
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+
+# PGO configuration is handled in build scripts and CI
+# Profile-specific RUSTFLAGS are set via environment variables
+
+# Faster dependency compilation
+[profile.dev.package."*"]
+opt-level = 1
+debug = false
+
+[profile.test.package."*"]
+opt-level = 1
+debug = false
+
+# Registry and git fetch configuration
+[net]
+retry = 3
+git-fetch-with-cli = true
+
+[registries.crates-io]
+protocol = "sparse"

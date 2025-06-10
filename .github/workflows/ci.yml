@@ -8,129 +8,15 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CACHE_ON_FAILURE: false
 
 # This tool is designed for Windows environments
 # All testing and building is done on Windows only
 jobs:
-  test:
-    name: Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-latest]
-        rust: [stable]
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: ''
-
-    - name: Cache npm dependencies
-      uses: actions/cache@v3
-      with:
-        path: frontend/node_modules
-        key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-npm-
-
-    - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm install
-      shell: cmd
-
-    - name: Build frontend
-      run: |
-        cd frontend
-        npm run build
-      shell: cmd
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-        components: rustfmt, clippy
-
-    - name: Setup Rust cache
-      uses: Swatinem/rust-cache@v2
-      with:
-        # Cache key prefix for this job
-        prefix-key: "ci"
-        # Additional cache key components
-        key: ${{ matrix.os }}-${{ matrix.rust }}
-        # Cache target directory
-        cache-targets: true
-        # Cache cargo registry
-        cache-all-crates: true
-        # Save cache even on failure
-        save-if: true
-
-    - name: Check formatting
-      run: cargo fmt --all -- --check
-
-    - name: Run clippy
-      run: cargo clippy --all-targets --all-features -- -D warnings
-
-    - name: Install nightly toolchain for udeps
-      uses: dtolnay/rust-toolchain@nightly
-
-    - name: Cache cargo tools
-      uses: actions/cache@v3
-      with:
-        path: ~/.cargo/bin
-        key: ${{ runner.os }}-cargo-tools-udeps-v1
-        restore-keys: |
-          ${{ runner.os }}-cargo-tools-
-
-    - name: Install cargo-binstall
-      shell: bash
-      run: |
-        if ! command -v cargo-binstall &> /dev/null; then
-          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-        fi
-
-    - name: Install cargo-udeps (fast binary install)
-      shell: bash
-      run: |
-        if ! command -v cargo-udeps &> /dev/null; then
-          cargo binstall --no-confirm cargo-udeps
-        fi
-
-    - name: Check for unused dependencies
-      run: cargo +nightly udeps --all-targets
-
-    - name: Build
-      run: cargo build --verbose
-
-    - name: Run unit tests
-      run: cargo test --lib --verbose
-
-    - name: Run integration tests
-      run: cargo test --test '*' --verbose
-
-    - name: Run all tests with coverage
-      run: cargo test --verbose --all-features
-
-    - name: Run doc tests
-      run: cargo test --doc --verbose
-
-    - name: Build release
-      run: cargo build --release --verbose
-
-    - name: Test release binary
-      run: |
-        .\target\release\installer-analyzer.exe --version
-        .\target\release\installer-analyzer.exe --help
-
-
-
-  security:
-    name: Security Audit
+  # Build frontend once and share with other jobs
+  frontend:
+    name: Build Frontend
     runs-on: windows-latest
     steps:
     - name: Checkout code
@@ -140,7 +26,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: ''
 
     - name: Cache npm dependencies
       uses: actions/cache@v3
@@ -150,17 +35,165 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-npm-
 
-    - name: Install frontend dependencies
+    - name: Install and build frontend
       run: |
         cd frontend
-        npm install
-      shell: cmd
-
-    - name: Build frontend
-      run: |
-        cd frontend
+        npm ci --prefer-offline
         npm run build
       shell: cmd
+
+    - name: Upload frontend artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+        retention-days: 1
+
+  # Setup shared Rust environment with GPU acceleration
+  setup:
+    name: Setup Rust
+    runs-on: windows-latest-gpu  # Use GPU-enabled runner
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust stable
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+
+    - name: Install Rust nightly
+      uses: dtolnay/rust-toolchain@nightly
+
+    - name: Generate cache key
+      id: cache-key
+      run: |
+        $key = "rust-gpu-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}"
+        echo "key=$key" >> $env:GITHUB_OUTPUT
+
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        prefix-key: "setup-gpu"
+        cache-targets: true
+        cache-all-crates: true
+        save-if: true
+
+    - name: Cache cargo tools
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/bin
+        key: ${{ runner.os }}-cargo-tools-gpu-v2
+        restore-keys: |
+          ${{ runner.os }}-cargo-tools-
+
+    - name: Install cargo tools
+      shell: bash
+      run: |
+        # Install cargo-binstall if not cached
+        if ! command -v cargo-binstall &> /dev/null; then
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+        fi
+
+        # Install tools in parallel
+        cargo binstall --no-confirm cargo-udeps cargo-audit cargo-llvm-cov
+
+    - name: Pre-compile dependencies with GPU acceleration
+      run: |
+        # Enable GPU-accelerated compilation
+        $env:RUSTC_WRAPPER = "sccache"
+        $env:SCCACHE_CACHE_SIZE = "10G"
+        cargo build --lib
+        cargo build --tests
+
+  # Quality checks job
+  quality:
+    name: Quality Checks
+    runs-on: windows-latest-gpu
+    needs: [frontend, setup]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download frontend artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+
+    - name: Install Rust nightly
+      uses: dtolnay/rust-toolchain@nightly
+
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        prefix-key: "quality"
+        cache-targets: true
+        cache-all-crates: true
+
+    - name: Cache cargo tools
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/bin
+        key: ${{ runner.os }}-cargo-tools-v2
+
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+
+    - name: Run clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
+    - name: Check for unused dependencies
+      run: cargo +nightly udeps --all-targets
+
+  # Test job
+  test:
+    name: Tests
+    runs-on: windows-latest
+    needs: [frontend, setup]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download frontend artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        prefix-key: "test"
+        cache-targets: true
+        cache-all-crates: true
+
+    - name: Run tests
+      run: cargo test --all-features --verbose
+
+    - name: Run doc tests
+      run: cargo test --doc --verbose
+
+
+
+  # Security audit job
+  security:
+    name: Security Audit
+    runs-on: windows-latest
+    needs: [setup]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
@@ -170,65 +203,30 @@ jobs:
       with:
         prefix-key: "security"
         cache-targets: false
-        save-if: true
 
     - name: Cache cargo tools
       uses: actions/cache@v3
       with:
         path: ~/.cargo/bin
-        key: ${{ runner.os }}-cargo-tools-audit-v1
-        restore-keys: |
-          ${{ runner.os }}-cargo-tools-
-
-    - name: Install cargo-binstall
-      shell: bash
-      run: |
-        if ! command -v cargo-binstall &> /dev/null; then
-          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-        fi
-
-    - name: Install cargo-audit (fast binary install)
-      shell: bash
-      run: |
-        if ! command -v cargo-audit &> /dev/null; then
-          cargo binstall --no-confirm cargo-audit
-        fi
+        key: ${{ runner.os }}-cargo-tools-v2
 
     - name: Run security audit
       run: cargo audit
 
+  # Coverage job
   coverage:
     name: Code Coverage
     runs-on: windows-latest
+    needs: [frontend, setup]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Download frontend artifacts
+      uses: actions/download-artifact@v3
       with:
-        node-version: '18'
-        cache: ''
-
-    - name: Cache npm dependencies
-      uses: actions/cache@v3
-      with:
-        path: frontend/node_modules
-        key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-npm-
-
-    - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm install
-      shell: cmd
-
-    - name: Build frontend
-      run: |
-        cd frontend
-        npm run build
-      shell: cmd
+        name: frontend-dist
+        path: frontend/dist/
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
@@ -239,30 +237,14 @@ jobs:
       uses: Swatinem/rust-cache@v2
       with:
         prefix-key: "coverage"
-        cache-targets: false
-        save-if: true
+        cache-targets: true
+        cache-all-crates: true
 
     - name: Cache cargo tools
       uses: actions/cache@v3
       with:
         path: ~/.cargo/bin
-        key: ${{ runner.os }}-cargo-tools-llvm-cov-v1
-        restore-keys: |
-          ${{ runner.os }}-cargo-tools-
-
-    - name: Install cargo-binstall
-      shell: bash
-      run: |
-        if ! command -v cargo-binstall &> /dev/null; then
-          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-        fi
-
-    - name: Install cargo-llvm-cov (fast binary install)
-      shell: bash
-      run: |
-        if ! command -v cargo-llvm-cov &> /dev/null; then
-          cargo binstall --no-confirm cargo-llvm-cov
-        fi
+        key: ${{ runner.os }}-cargo-tools-v2
 
     - name: Generate coverage
       run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
@@ -273,3 +255,123 @@ jobs:
         files: lcov.info
         fail_ci_if_error: false
       continue-on-error: true
+
+  # Build job for release artifacts
+  build:
+    name: Build Release
+    runs-on: windows-latest
+    needs: [frontend, setup, quality, test]
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download frontend artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        prefix-key: "release"
+        cache-targets: true
+        cache-all-crates: true
+
+    - name: Build standard release
+      run: cargo build --release --verbose
+
+    - name: Test release binary
+      run: |
+        .\target\release\installer-analyzer.exe --version
+        .\target\release\installer-analyzer.exe --help
+
+    - name: Upload standard release artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: installer-analyzer-windows
+        path: target/release/installer-analyzer.exe
+        retention-days: 30
+
+  # PGO optimized build job
+  build-pgo:
+    name: Build PGO Optimized
+    runs-on: windows-latest
+    needs: [frontend, setup, quality, test]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download frontend artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Setup Rust cache for PGO
+      uses: Swatinem/rust-cache@v2
+      with:
+        prefix-key: "pgo"
+        cache-targets: true
+        cache-all-crates: true
+
+    - name: Cache PGO data
+      uses: actions/cache@v3
+      with:
+        path: pgo-data
+        key: ${{ runner.os }}-pgo-data-${{ hashFiles('Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-pgo-data-
+
+    - name: Install LLVM tools
+      run: |
+        # Install LLVM for llvm-profdata
+        choco install llvm -y
+        refreshenv
+
+    - name: Run PGO build
+      shell: pwsh
+      run: |
+        # Make scripts executable and run PGO build
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+        .\scripts\build-pgo.ps1 -Verbose
+
+    - name: Test PGO optimized binary
+      run: |
+        .\target\release-pgo\installer-analyzer.exe --version
+        .\target\release-pgo\installer-analyzer.exe --help
+
+    - name: Compare binary sizes
+      shell: pwsh
+      run: |
+        $standardSize = (Get-Item "target/release/installer-analyzer.exe").Length
+        $pgoSize = (Get-Item "target/release-pgo/installer-analyzer.exe").Length
+        $sizeDiff = $pgoSize - $standardSize
+        $percentDiff = [math]::Round(($sizeDiff / $standardSize) * 100, 2)
+
+        Write-Host "📊 Binary Size Comparison:" -ForegroundColor Cyan
+        Write-Host "Standard build: $([math]::Round($standardSize / 1MB, 2)) MB" -ForegroundColor Blue
+        Write-Host "PGO build: $([math]::Round($pgoSize / 1MB, 2)) MB" -ForegroundColor Blue
+        Write-Host "Difference: $([math]::Round($sizeDiff / 1MB, 2)) MB ($percentDiff%)" -ForegroundColor $(if ($sizeDiff -gt 0) { "Yellow" } else { "Green" })
+
+    - name: Upload PGO optimized artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: installer-analyzer-windows-pgo
+        path: target/release-pgo/installer-analyzer.exe
+        retention-days: 30
+
+    - name: Upload PGO profile data
+      uses: actions/upload-artifact@v3
+      with:
+        name: pgo-profile-data
+        path: pgo-data/
+        retention-days: 7
