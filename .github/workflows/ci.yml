@@ -38,6 +38,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-npm-
 
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm install
+      shell: cmd
+
     - name: Install Rust
       uses: dtolnay/rust-toolchain@master
       with:
@@ -138,6 +144,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-npm-
 
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm install
+      shell: cmd
+
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
 
@@ -193,6 +205,12 @@ jobs:
         key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-npm-
+
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm install
+      shell: cmd
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
