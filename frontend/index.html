@@ -260,9 +260,18 @@
                             <div class="col-md-6">
                                 <table class="table table-borderless table-sm">
                                     <tr>
-                                        <td style="width: 30%;"><strong>Filename:</strong></td>
-                                        <td id="filename">-</td>
+                                        <td style="width: 30%;"><strong>Original File:</strong></td>
+                                        <td id="original-filename" style="word-break: break-all; max-width: 300px;">-</td>
                                         <td style="width: 60px;">
+                                            <button class="copy-btn" onclick="copyToClipboard(document.getElementById('original-filename').textContent)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Product Name:</strong></td>
+                                        <td id="filename">-</td>
+                                        <td>
                                             <button class="copy-btn" onclick="copyToClipboard(document.getElementById('filename').textContent)">
                                                 <i class="fas fa-copy"></i>
                                             </button>
@@ -304,6 +313,17 @@
                                         <td id="file-size">-</td>
                                         <td style="width: 60px;">
                                             <button class="copy-btn" onclick="copyToClipboard(document.getElementById('file-size').textContent)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>SHA256:</strong></td>
+                                        <td>
+                                            <span class="code-hash" id="file-hash">-</span>
+                                        </td>
+                                        <td>
+                                            <button class="copy-btn" onclick="copyToClipboard(document.getElementById('file-hash').textContent)">
                                                 <i class="fas fa-copy"></i>
                                             </button>
                                         </td>

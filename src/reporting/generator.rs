@@ -1,101 +1,258 @@
-//! Report generator implementation using templates
+//! Report generator implementation using frontend templates
 
 use crate::core::{AnalysisResult, AnalyzerError, Result};
-use crate::reporting::templates::{get_report_template, ReportTemplateData};
+use crate::reporting::templates::get_report_template;
 use crate::reporting::{ReportFormat, Reporter};
-use handlebars::Handlebars;
+use serde_json;
 use std::path::Path;
 
 /// Main report generator
-pub struct ReportGenerator {
-    handlebars: Handlebars<'static>,
-}
+pub struct ReportGenerator {}
 
 impl ReportGenerator {
     pub fn new() -> Self {
-        let mut handlebars = Handlebars::new();
-
-        // Register JSON helper for template data injection
-        handlebars.register_helper(
-            "json",
-            Box::new(
-                |h: &handlebars::Helper,
-                 _: &Handlebars,
-                 _: &handlebars::Context,
-                 _: &mut handlebars::RenderContext,
-                 out: &mut dyn handlebars::Output| {
-                    let value = h.param(0).unwrap();
-                    let json_str = serde_json::to_string(value.value()).map_err(|e| {
-                        handlebars::RenderError::from(handlebars::RenderErrorReason::Other(
-                            format!("JSON serialization failed: {}", e),
-                        ))
-                    })?;
-                    out.write(&json_str)?;
-                    Ok(())
-                },
-            ),
-        );
-
-        // Load embedded template
-        let template_str = get_report_template();
-        handlebars
-            .register_template_string("report", template_str)
-            .expect("Template should be valid");
-
-        Self { handlebars }
+        Self {}
     }
 
-    /// Generate JSON report optimized for CI/CD
-    async fn generate_json_report(&self, result: &AnalysisResult) -> Result<String> {
-        // Create a CI/CD optimized JSON structure
-        let ci_report = serde_json::json!({
+    /// Create unified analysis data structure (used by both HTML and JSON reports)
+    fn create_unified_analysis_data(&self, result: &AnalysisResult) -> Result<serde_json::Value> {
+        // Extract original filename - unified logic
+        let original_filename = if let Some(source_path) = &result.source_file_path {
+            source_path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "Unknown File".to_string())
+        } else {
+            result
+                .metadata
+                .properties
+                .get("OriginalFilename")
+                .or_else(|| result.metadata.properties.get("original_filename"))
+                .cloned()
+                .unwrap_or_else(|| {
+                    result
+                        .metadata
+                        .product_name
+                        .as_deref()
+                        .unwrap_or("Unknown Package")
+                        .to_string()
+                })
+        };
+
+        // Create unified data structure
+        let analysis_data = serde_json::json!({
             "session_id": result.session_id,
-            "status": "success",
+            "analyzed_at": result.analyzed_at,
+            "analysis_duration": result.analysis_duration.as_secs_f64(),
+            "dynamic_analysis": result.dynamic_analysis,
             "metadata": {
-                "product_name": result.metadata.product_name,
-                "product_version": result.metadata.product_version,
-                "manufacturer": result.metadata.manufacturer,
-                "format": result.metadata.format,
+                "original_filename": original_filename,
+                "filename": result.metadata.product_name.as_deref().unwrap_or("Unknown Package"),
                 "file_size": result.metadata.file_size,
-                "file_hash": result.metadata.file_hash
+                "file_hash": result.metadata.file_hash,
+                "format": format!("{:?}", result.metadata.format),
+                "version": result.metadata.product_version.as_deref().unwrap_or("N/A"),
+                "publisher": result.metadata.manufacturer.as_deref().unwrap_or("N/A"),
+                "description": result.metadata.properties.get("FileDescription")
+                    .or_else(|| result.metadata.properties.get("description"))
+                    .cloned()
+                    .unwrap_or_else(|| "N/A".to_string()),
+                "properties": result.metadata.properties
             },
+            "files": self.create_hierarchical_file_list(&result.files),
+            "registry_operations": result.registry_operations.iter().map(|op| {
+                match op {
+                    crate::core::RegistryOperation::CreateKey { key_path, .. } => {
+                        serde_json::json!({
+                            "operation": "CREATE",
+                            "key": key_path,
+                            "value": null
+                        })
+                    },
+                    crate::core::RegistryOperation::SetValue { key_path, value_name, value_data, .. } => {
+                        let value_str = match value_data {
+                            crate::core::RegistryValue::String(s) => s.clone(),
+                            crate::core::RegistryValue::DWord(d) => format!("0x{:08x}", d),
+                            crate::core::RegistryValue::Binary(b) => format!("Binary ({} bytes)", b.len()),
+                            _ => "Complex Value".to_string(),
+                        };
+                        serde_json::json!({
+                            "operation": "SET",
+                            "key": format!("{}\\{}", key_path, value_name),
+                            "value": value_str
+                        })
+                    },
+                    crate::core::RegistryOperation::DeleteKey { key_path, .. } => {
+                        serde_json::json!({
+                            "operation": "DELETE",
+                            "key": key_path,
+                            "value": null
+                        })
+                    },
+                    crate::core::RegistryOperation::DeleteValue { key_path, value_name, .. } => {
+                        serde_json::json!({
+                            "operation": "DELETE_VALUE",
+                            "key": format!("{}\\{}", key_path, value_name),
+                            "value": null
+                        })
+                    }
+                }
+            }).collect::<Vec<_>>(),
+            "file_operations": result.file_operations,
+            "process_operations": result.process_operations,
+            "network_operations": result.network_operations,
             "summary": {
                 "total_files": result.files.len(),
                 "executable_files": result.files.iter().filter(|f| f.attributes.executable).count(),
                 "registry_operations": result.registry_operations.len(),
                 "file_operations": result.file_operations.len(),
                 "process_operations": result.process_operations.len(),
-                "network_operations": result.network_operations.len(),
-                "analysis_duration_seconds": result.analysis_duration.as_secs(),
-                "dynamic_analysis": result.dynamic_analysis
-            },
-            "security": {
-                "risk_level": self.calculate_risk_level(result),
-                "executable_count": result.files.iter().filter(|f| f.attributes.executable).count(),
-                "large_files_count": result.files.iter().filter(|f| f.size > 50 * 1024 * 1024).count(),
-                "registry_modifications": result.registry_operations.len()
-            },
-            "files": result.files.iter().take(100).map(|f| serde_json::json!({
-                "path": f.path,
-                "size": f.size,
-                "executable": f.attributes.executable,
-                "compression": f.compression
-            })).collect::<Vec<_>>(),
-            "registry_operations": result.registry_operations.iter().take(50).collect::<Vec<_>>(),
-            "analyzed_at": result.analyzed_at,
-            "version": env!("CARGO_PKG_VERSION")
+                "network_operations": result.network_operations.len()
+            }
         });
 
-        serde_json::to_string_pretty(&ci_report).map_err(AnalyzerError::SerializationError)
+        Ok(analysis_data)
     }
 
-    /// Generate modern HTML report using templates
-    async fn generate_html_report(&self, result: &AnalysisResult) -> Result<String> {
-        let template_data = ReportTemplateData::from_analysis_result(result);
+    /// Generate JSON report using unified data structure
+    async fn generate_json_report(&self, result: &AnalysisResult) -> Result<String> {
+        let analysis_data = self.create_unified_analysis_data(result)?;
 
-        self.handlebars
-            .render("report", &template_data)
-            .map_err(|e| AnalyzerError::generic(format!("Template rendering failed: {}", e)))
+        // For JSON output, we can either return the raw analysis data or wrap it
+        // Let's return the unified data structure directly for consistency
+        serde_json::to_string_pretty(&analysis_data).map_err(AnalyzerError::SerializationError)
+    }
+
+    /// Generate modern HTML report using frontend template with data injection
+    async fn generate_html_report(&self, result: &AnalysisResult) -> Result<String> {
+        // Get the base HTML template
+        let template_html = get_report_template();
+
+        // Use unified analysis data structure
+        let analysis_data = self.create_unified_analysis_data(result)?;
+
+        // Inject the data into the HTML template
+        let data_script = format!(
+            "<script>window.ANALYSIS_DATA = {};</script>",
+            serde_json::to_string(&analysis_data).map_err(AnalyzerError::SerializationError)?
+        );
+
+        // Insert the data script before the closing </head> tag
+        let html_with_data = template_html.replace("</head>", &format!("{}\n</head>", data_script));
+
+        Ok(html_with_data)
+    }
+
+    /// Get file type for frontend display
+    fn get_file_type(&self, path: &str, is_executable: bool) -> &'static str {
+        if is_executable {
+            return "executable";
+        }
+
+        if let Some(ext) = path.split('.').next_back() {
+            match ext.to_lowercase().as_str() {
+                "dll" | "so" | "dylib" => "library",
+                "txt" | "md" | "readme" => "text",
+                "ini" | "cfg" | "conf" => "config",
+                "sys" => "driver",
+                _ => "file",
+            }
+        } else {
+            "file"
+        }
+    }
+
+    /// Get file icon class for frontend display
+    fn get_file_icon(&self, path: &str, is_directory: bool) -> &'static str {
+        if is_directory {
+            return "fas fa-folder";
+        }
+
+        if let Some(ext) = path.split('.').next_back() {
+            match ext.to_lowercase().as_str() {
+                "exe" | "msi" | "dmg" => "fas fa-cog",
+                "dll" | "so" | "dylib" => "fas fa-puzzle-piece",
+                "txt" | "md" | "readme" => "fas fa-file-alt",
+                "pdf" => "fas fa-file-pdf",
+                "jpg" | "jpeg" | "png" | "gif" => "fas fa-file-image",
+                "mp3" | "wav" | "ogg" => "fas fa-file-audio",
+                "mp4" | "avi" | "mov" => "fas fa-file-video",
+                "zip" | "rar" | "7z" => "fas fa-file-archive",
+                "js" | "ts" | "py" | "java" | "cpp" => "fas fa-file-code",
+                "sys" => "fas fa-microchip",
+                _ => "fas fa-file",
+            }
+        } else {
+            "fas fa-file"
+        }
+    }
+
+    /// Create hierarchical file list with proper directory structure for frontend
+    fn create_hierarchical_file_list(&self, files: &[crate::core::FileEntry]) -> serde_json::Value {
+        use std::collections::HashMap;
+
+        let mut all_files = Vec::new();
+        let mut directories = HashMap::new();
+
+        // First, collect all unique directory paths
+        for file in files {
+            let path_str = file.path.to_string_lossy();
+            let path_parts: Vec<&str> = path_str.split('/').collect();
+
+            // Create directory entries for each level
+            for i in 1..path_parts.len() {
+                let dir_path = path_parts[0..i].join("/");
+                if !directories.contains_key(&dir_path) {
+                    directories.insert(dir_path.clone(), true);
+                }
+            }
+        }
+
+        // Add directory entries
+        for dir_path in directories.keys() {
+            all_files.push(serde_json::json!({
+                "path": dir_path,
+                "size": 0,
+                "type": "folder",
+                "is_directory": true,
+                "icon_class": "fas fa-folder",
+                "attributes": {
+                    "readonly": false,
+                    "hidden": false,
+                    "system": false,
+                    "executable": false
+                },
+                "hash": null,
+                "target_path": null,
+                "compression": null
+            }));
+        }
+
+        // Add file entries
+        for file in files {
+            let path_str = file.path.to_string_lossy();
+            let is_directory = file.path.is_dir();
+
+            all_files.push(serde_json::json!({
+                "path": path_str,
+                "size": file.size,
+                "type": self.get_file_type(&path_str, file.attributes.executable),
+                "is_directory": is_directory,
+                "icon_class": self.get_file_icon(&path_str, is_directory),
+                "attributes": {
+                    "readonly": file.attributes.readonly,
+                    "hidden": file.attributes.hidden,
+                    "system": file.attributes.system,
+                    "executable": file.attributes.executable
+                },
+                "hash": file.hash,
+                "target_path": file.target_path.as_ref().map(|p| p.to_string_lossy().to_string()),
+                "compression": file.compression
+            }));
+        }
+
+        serde_json::Value::Array(all_files)
     }
 
     /// Generate Markdown report

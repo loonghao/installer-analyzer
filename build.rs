@@ -12,11 +12,14 @@ fn main() {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let frontend_dir = Path::new(&manifest_dir).join("frontend");
     let dist_dir = frontend_dir.join("dist");
-    let template_path = dist_dir.join("template.html");
+    let template_path = dist_dir.join("index.html");
 
     // Check if frontend directory exists
     if !frontend_dir.exists() {
-        panic!("Frontend directory not found at: {}", frontend_dir.display());
+        panic!(
+            "Frontend directory not found at: {}",
+            frontend_dir.display()
+        );
     }
 
     // Check if node_modules exists, if not run npm install
@@ -24,7 +27,7 @@ fn main() {
     if !node_modules.exists() {
         println!("cargo:warning=Installing frontend dependencies...");
         let npm_install = Command::new("npm")
-            .args(&["install"])
+            .args(["install"])
             .current_dir(&frontend_dir)
             .status()
             .expect("Failed to run npm install");
@@ -37,7 +40,8 @@ fn main() {
     // Build the frontend if template doesn't exist or is outdated
     let should_build = !template_path.exists() || {
         // Check if any source files are newer than the template
-        let template_modified = template_path.metadata()
+        let template_modified = template_path
+            .metadata()
             .and_then(|m| m.modified())
             .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
 
@@ -62,7 +66,7 @@ fn main() {
     if should_build {
         println!("cargo:warning=Building frontend...");
         let npm_build = Command::new("npm")
-            .args(&["run", "build"])
+            .args(["run", "build"])
             .current_dir(&frontend_dir)
             .status()
             .expect("Failed to run npm build");
@@ -82,5 +86,8 @@ fn main() {
 
     // Set environment variable for the template path
     println!("cargo:rustc-env=TEMPLATE_PATH={}", template_path.display());
-    println!("cargo:warning=Using template at: {}", template_path.display());
+    println!(
+        "cargo:warning=Using template at: {}",
+        template_path.display()
+    );
 }
