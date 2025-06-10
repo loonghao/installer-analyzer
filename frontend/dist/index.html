@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installer Analysis Report</title>
+
+    <!-- CDN Dependencies -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --dark-color: #1e293b;
+        }
+
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 12px 12px 0 0 !important;
+        }
+
+        .badge-custom {
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+        }
+
+        /* macOS Finder Column View Styles */
+        .finder-container {
+            background: #f6f6f6;
+            border: 1px solid #d1d1d1;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 500px;
+            display: flex;
+        }
+
+        .finder-column {
+            min-width: 200px;
+            width: 200px;
+            border-right: 1px solid #d1d1d1;
+            background: white;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .finder-column:last-child {
+            border-right: none;
+            flex: 1;
+        }
+
+        .finder-item {
+            display: flex;
+            align-items: center;
+            padding: 4px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.1s ease;
+            user-select: none;
+        }
+
+        .finder-item:hover {
+            background-color: #e8f4fd;
+        }
+
+        .finder-item.selected {
+            background-color: #007aff;
+            color: white;
+        }
+
+        .finder-item.has-children::after {
+            content: "▶";
+            margin-left: auto;
+            font-size: 10px;
+            color: #999;
+        }
+
+        .finder-item.selected.has-children::after {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .finder-icon {
+            margin-right: 8px;
+            width: 16px;
+            text-align: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .finder-label {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .finder-size {
+            font-size: 11px;
+            color: #999;
+            margin-left: 8px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .finder-item.selected .finder-size {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .finder-toolbar {
+            background: linear-gradient(to bottom, #f7f7f7, #e8e8e8);
+            border-bottom: 1px solid #d1d1d1;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 200px;
+            height: 24px;
+            padding: 4px 8px 4px 28px;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            font-size: 12px;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+            width: 250px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 11px;
+            pointer-events: none;
+        }
+
+        .copy-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .metric-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: var(--secondary-color);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .code-hash {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+  <script type="module" crossorigin>(function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const s of document.querySelectorAll('link[rel="modulepreload"]'))e(s);new MutationObserver(s=>{for(const i of s)if(i.type==="childList")for(const a of i.addedNodes)a.tagName==="LINK"&&a.rel==="modulepreload"&&e(a)}).observe(document,{childList:!0,subtree:!0});function o(s){const i={};return s.integrity&&(i.integrity=s.integrity),s.referrerPolicy&&(i.referrerPolicy=s.referrerPolicy),s.crossOrigin==="use-credentials"?i.credentials="include":s.crossOrigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function e(s){if(s.ep)return;s.ep=!0;const i=o(s);fetch(s.href,i)}})();let c=null;function E(){typeof window.ANALYSIS_DATA<"u"?(c=window.ANALYSIS_DATA,y()):C(),A();const t=new Date,n=document.getElementById("generated-time");n&&(n.textContent=t.toLocaleString())}function C(){c={metadata:{filename:"No Analysis Data",original_filename:"No Analysis Data",file_size:0,file_hash:"No data available - please analyze an installer file",format:"Unknown",version:"N/A",publisher:"N/A",description:"No installer has been analyzed yet"},files:[],registry_operations:[]},y()}function y(){c&&(w(),S(),L(),z())}function w(){if(!c)return;const t=c.metadata,n=document.getElementById("product-name");n&&(n.textContent=t.filename||"Package Analysis"),r("original-filename",t.original_filename),r("filename",t.filename),r("version",t.version||"N/A"),r("publisher",t.publisher||"N/A"),r("format",t.format),r("file-size",m(t.file_size)),r("file-hash",t.file_hash),r("description",t.description||"N/A")}function S(){if(!c)return;const t=c.files||[],n=c.registry_operations||[],o=t.filter(i=>!i.is_directory).length,e=t.filter(i=>i.type==="executable").length,s=t.reduce((i,a)=>i+a.size,0);r("total-files",o.toString()),r("registry-ops",n.length.toString()),r("executables",e.toString()),r("total-size",m(s)),r("file-count",o.toString()),r("file-count-display",`${o} files`)}function L(){const t=document.getElementById("finderContainer");if(!t||!c)return;const n=c.files||[],o=T(n),e=b(o,[]);t.innerHTML="",t.appendChild(e)}function T(t){const n=[],o=new Map;return t.sort((e,s)=>{const i=e.path.split("/").length,a=s.path.split("/").length;return i!==a?i-a:e.path.localeCompare(s.path)}),t.forEach(e=>{const s=e.path.split("/"),a={name:s[s.length-1],path:e.path,size:e.size,is_directory:e.is_directory||!1,icon_class:e.icon_class||N(e.path,e.is_directory),children:e.is_directory?[]:void 0};if(o.set(e.path,a),s.length===1)n.push(a);else{const l=s.slice(0,-1).join("/"),d=o.get(l);d&&d.children&&d.children.push(a)}}),x(n),n}function x(t){t.forEach(n=>{n.is_directory&&n.children&&(x(n.children),n.size=n.children.reduce((o,e)=>o+e.size,0))})}function z(){if(!c)return;const t=c.registry_operations||[],n=document.getElementById("registry-section"),o=document.getElementById("registry-table-body"),e=document.getElementById("registry-count");if(t.length===0){n&&(n.style.display="none");return}n&&(n.style.display="block"),e&&(e.textContent=t.length.toString()),o&&(o.innerHTML=t.map(s=>`
+      <tr>
+        <td><span class="badge bg-primary">${f(s.operation)}</span></td>
+        <td><code style="font-size: 0.85rem; word-break: break-all;">${f(s.key)}</code></td>
+        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${s.value?f(s.value):"-"}">${s.value?f(s.value):"-"}</td>
+        <td>
+          <button class="copy-btn" onclick="copyToClipboard('${f(s.key)}')">
+            <i class="fas fa-copy"></i>
+          </button>
+        </td>
+      </tr>
+    `).join(""))}function A(){const t=document.getElementById("searchInput");t&&t.addEventListener("input",_)}function _(t){const n=t.target.value.toLowerCase(),o=document.querySelectorAll(".finder-item");let e=0;o.forEach(i=>{var d,h;const l=(((h=(d=i.querySelector(".finder-label"))==null?void 0:d.textContent)==null?void 0:h.toLowerCase())||"").includes(n);if(n===""||l){if(i.classList.remove("hidden"),l&&n!==""){e++;const u=i.querySelector(".finder-label");if(u&&n){const v=(u.textContent||"").replace(new RegExp(`(${I(n)})`,"gi"),"<mark>$1</mark>");u.innerHTML=v}}}else i.classList.add("hidden")});const s=document.getElementById("searchResults");if(s)if(n)s.textContent=`${e} matches found`;else{const i=document.querySelectorAll(".finder-item").length;s.textContent=`${i} files`}}function I(t){return t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function b(t,n){const o=document.createElement("div");return o.className="finder-column",t.forEach(e=>{const s=document.createElement("div");s.className="finder-item",e.children&&e.children.length>0&&s.classList.add("has-children"),s.innerHTML=`
+      <span class="finder-icon"><i class="${e.icon_class}"></i></span>
+      <span class="finder-label" title="${f(e.path)}">${f(e.name)}</span>
+      <span class="finder-size">${m(e.size)}</span>
+    `,s.addEventListener("click",()=>{o.querySelectorAll(".finder-item.selected").forEach(l=>{l.classList.remove("selected")}),s.classList.add("selected");const i=o.parentElement;let a=o.nextElementSibling;for(;a;){const l=a;a=a.nextElementSibling,i.removeChild(l)}if(e.children&&e.children.length>0){const l=[...n,e.name],d=b(e.children,l);i.appendChild(d)}}),s.addEventListener("contextmenu",i=>{i.preventDefault(),p(e.path)}),s.addEventListener("dblclick",i=>{i.preventDefault(),p(e.path)}),o.appendChild(s)}),o}function N(t,n){var e;if(n)return"fas fa-folder";switch((e=t.split(".").pop())==null?void 0:e.toLowerCase()){case"exe":case"msi":case"dmg":return"fas fa-cog";case"dll":case"so":case"dylib":return"fas fa-puzzle-piece";case"txt":case"md":case"readme":return"fas fa-file-alt";case"pdf":return"fas fa-file-pdf";case"jpg":case"jpeg":case"png":case"gif":return"fas fa-file-image";case"mp3":case"wav":case"ogg":return"fas fa-file-audio";case"mp4":case"avi":case"mov":return"fas fa-file-video";case"zip":case"rar":case"7z":return"fas fa-file-archive";case"js":case"ts":case"py":case"java":case"cpp":return"fas fa-file-code";default:return"fas fa-file"}}function r(t,n){const o=document.getElementById(t);o&&(o.textContent=n)}function f(t){const n=document.createElement("div");return n.textContent=t,n.innerHTML}function m(t){const n=["Bytes","KB","MB","GB"];if(t===0)return"0 Bytes";const o=Math.floor(Math.log(t)/Math.log(1024));return Math.round(t/Math.pow(1024,o)*100)/100+" "+n[o]}function p(t){navigator.clipboard.writeText(t).then(()=>{g("Copied to clipboard!","success")}).catch(n=>{console.error("Failed to copy:",n),g("Failed to copy to clipboard","error")})}function g(t,n="success"){document.querySelectorAll(".toast-notification").forEach(s=>s.remove());const e=document.createElement("div");e.className=`toast-notification toast-${n}`,e.textContent=t,Object.assign(e.style,{position:"fixed",top:"20px",right:"20px",padding:"12px 20px",borderRadius:"6px",color:"white",fontWeight:"500",fontSize:"14px",zIndex:"9999",opacity:"0",transform:"translateY(-20px)",transition:"all 0.3s ease",backgroundColor:n==="success"?"#059669":"#dc2626",boxShadow:"0 4px 6px -1px rgba(0, 0, 0, 0.1)"}),document.body.appendChild(e),setTimeout(()=>{e.style.opacity="1",e.style.transform="translateY(0)"},10),setTimeout(()=>{e.style.opacity="0",e.style.transform="translateY(-20px)",setTimeout(()=>e.remove(),300)},3e3)}window.copyToClipboard=p;document.addEventListener("DOMContentLoaded",E);</script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-shield-alt me-2"></i>
+                Installer Analysis Report
+            </span>
+            <span class="navbar-text">
+                <i class="fas fa-clock me-1"></i>
+                Generated: <span id="generated-time"></span>
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title mb-0">
+                            <i class="fas fa-box me-2"></i>
+                            <span id="product-name">Package Analysis</span>
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless table-sm">
+                                    <tr>
+                                        <td style="width: 30%;"><strong>Original File:</strong></td>
+                                        <td id="original-filename" style="word-break: break-all; max-width: 300px;">-</td>
+                                        <td style="width: 60px;">
+                                            <button class="copy-btn" onclick="copyToClipboard(document.getElementById('original-filename').textContent)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Product Name:</strong></td>
+                                        <td id="filename">-</td>
+                                        <td>
+                                            <button class="copy-btn" onclick="copyToClipboard(document.getElementById('filename').textContent)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Version:</strong></td>
+                                        <td id="version">-</td>
+                                        <td>
+                                            <button class="copy-btn" onclick="copyToClipboard(document.getElementById('version').textContent)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Publisher:</strong></td>
+                                        <td id="publisher">-</td>
+                                        <td>
+                                            <button class="copy-btn" onclick="copyToClipboard(document.getElementById('publisher').textContent)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Format:</strong></td>
+                                        <td><span class="badge bg-primary" id="format">-</span></td>
+                                        <td>
+                                            <button class="copy-btn" onclick="copyToClipboard(document.getElementById('format').textContent)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless table-sm">
+                                    <tr>
+                                        <td style="width: 30%;"><strong>File Size:</strong></td>
+                                        <td id="file-size">-</td>
+                                        <td style="width: 60px;">
+                                            <button class="copy-btn" onclick="copyToClipboard(document.getElementById('file-size').textContent)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>SHA256:</strong></td>
+                                        <td>
+                                            <span class="code-hash" id="file-hash">-</span>
+                                        </td>
+                                        <td>
+                                            <button class="copy-btn" onclick="copyToClipboard(document.getElementById('file-hash').textContent)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Description:</strong></td>
+                                        <td id="description">-</td>
+                                        <td>
+                                            <button class="copy-btn" onclick="copyToClipboard(document.getElementById('description').textContent)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Analysis Type:</strong></td>
+                                        <td>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-search me-1"></i>
+                                                Static Analysis
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="copy-btn" onclick="copyToClipboard('Static Analysis')">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Analysis Summary
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-primary" id="total-files">0</div>
+                                    <div class="metric-label">Total Files</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-success" id="registry-ops">0</div>
+                                    <div class="metric-label">Registry Operations</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-warning" id="executables">0</div>
+                                    <div class="metric-label">Executables</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value text-info" id="total-size">0</div>
+                                    <div class="metric-label">Total Size</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Files Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-folder-open me-2"></i>
+                            File Structure (<span id="file-count">0</span> files)
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- macOS Finder Column View -->
+                        <div class="finder-toolbar">
+                            <div class="search-container">
+                                <div style="position: relative;">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text"
+                                           class="search-input"
+                                           id="searchInput"
+                                           placeholder="Search files..."
+                                           autocomplete="off">
+                                </div>
+                                <div class="search-results-info" id="searchResults">
+                                    <span id="file-count-display">0 files</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="finder-container" id="finderContainer">
+                            <!-- File tree will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registry Section -->
+        <div class="row mb-4" id="registry-section" style="display: none;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-database me-2"></i>
+                            Registry Operations (<span id="registry-count">0</span> operations)
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 15%;">Operation</th>
+                                        <th style="width: 50%;">Key Path</th>
+                                        <th style="width: 25%;">Value</th>
+                                        <th style="width: 10%;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="registry-table-body">
+                                    <!-- Registry operations will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center py-4 text-muted">
+            <p>Report generated by Installer Analyzer | <span id="session-info"></span></p>
+        </footer>
+    </div>
+
+    <!-- CDN Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

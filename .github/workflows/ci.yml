@@ -44,6 +44,12 @@ jobs:
         npm install
       shell: cmd
 
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+      shell: cmd
+
     - name: Install Rust
       uses: dtolnay/rust-toolchain@master
       with:
@@ -150,6 +156,12 @@ jobs:
         npm install
       shell: cmd
 
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+      shell: cmd
+
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
 
@@ -210,6 +222,12 @@ jobs:
       run: |
         cd frontend
         npm install
+      shell: cmd
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
       shell: cmd
 
     - name: Install Rust
