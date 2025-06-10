@@ -28,7 +28,7 @@ jobs:
         node-version: '18'
 
     - name: Cache npm dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: frontend/node_modules
         key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json') }}
@@ -43,16 +43,16 @@ jobs:
       shell: cmd
 
     - name: Upload frontend artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: frontend-dist
         path: frontend/dist/
         retention-days: 1
 
-  # Setup shared Rust environment with GPU acceleration
+  # Setup shared Rust environment
   setup:
     name: Setup Rust
-    runs-on: windows-latest-gpu  # Use GPU-enabled runner
+    runs-on: windows-latest
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}
     steps:
@@ -70,22 +70,22 @@ jobs:
     - name: Generate cache key
       id: cache-key
       run: |
-        $key = "rust-gpu-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}"
+        $key = "rust-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}"
         echo "key=$key" >> $env:GITHUB_OUTPUT
 
     - name: Setup Rust cache
       uses: Swatinem/rust-cache@v2
       with:
-        prefix-key: "setup-gpu"
+        prefix-key: "setup"
         cache-targets: true
         cache-all-crates: true
         save-if: true
 
     - name: Cache cargo tools
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cargo/bin
-        key: ${{ runner.os }}-cargo-tools-gpu-v2
+        key: ${{ runner.os }}-cargo-tools-v3
         restore-keys: |
           ${{ runner.os }}-cargo-tools-
 
@@ -100,25 +100,22 @@ jobs:
         # Install tools in parallel
         cargo binstall --no-confirm cargo-udeps cargo-audit cargo-llvm-cov
 
-    - name: Pre-compile dependencies with GPU acceleration
+    - name: Pre-compile dependencies
       run: |
-        # Enable GPU-accelerated compilation
-        $env:RUSTC_WRAPPER = "sccache"
-        $env:SCCACHE_CACHE_SIZE = "10G"
         cargo build --lib
         cargo build --tests
 
   # Quality checks job
   quality:
     name: Quality Checks
-    runs-on: windows-latest-gpu
+    runs-on: windows-latest
     needs: [frontend, setup]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Download frontend artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: frontend-dist
         path: frontend/dist/
@@ -139,10 +136,10 @@ jobs:
         cache-all-crates: true
 
     - name: Cache cargo tools
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cargo/bin
-        key: ${{ runner.os }}-cargo-tools-v2
+        key: ${{ runner.os }}-cargo-tools-v3
 
     - name: Check formatting
       run: cargo fmt --all -- --check
@@ -163,7 +160,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Download frontend artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: frontend-dist
         path: frontend/dist/
@@ -205,10 +202,10 @@ jobs:
         cache-targets: false
 
     - name: Cache cargo tools
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cargo/bin
-        key: ${{ runner.os }}-cargo-tools-v2
+        key: ${{ runner.os }}-cargo-tools-v3
 
     - name: Run security audit
       run: cargo audit
@@ -223,7 +220,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Download frontend artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: frontend-dist
         path: frontend/dist/
@@ -241,16 +238,16 @@ jobs:
         cache-all-crates: true
 
     - name: Cache cargo tools
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cargo/bin
-        key: ${{ runner.os }}-cargo-tools-v2
+        key: ${{ runner.os }}-cargo-tools-v3
 
     - name: Generate coverage
       run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         files: lcov.info
         fail_ci_if_error: false
@@ -267,7 +264,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Download frontend artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: frontend-dist
         path: frontend/dist/
@@ -291,7 +288,7 @@ jobs:
         .\target\release\installer-analyzer.exe --help
 
     - name: Upload standard release artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: installer-analyzer-windows
         path: target/release/installer-analyzer.exe
@@ -308,7 +305,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Download frontend artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: frontend-dist
         path: frontend/dist/
@@ -324,7 +321,7 @@ jobs:
         cache-all-crates: true
 
     - name: Cache PGO data
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: pgo-data
         key: ${{ runner.os }}-pgo-data-${{ hashFiles('Cargo.lock') }}
@@ -363,14 +360,14 @@ jobs:
         Write-Host "Difference: $([math]::Round($sizeDiff / 1MB, 2)) MB ($percentDiff%)" -ForegroundColor $(if ($sizeDiff -gt 0) { "Yellow" } else { "Green" })
 
     - name: Upload PGO optimized artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: installer-analyzer-windows-pgo
         path: target/release-pgo/installer-analyzer.exe
         retention-days: 30
 
     - name: Upload PGO profile data
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pgo-profile-data
         path: pgo-data/
