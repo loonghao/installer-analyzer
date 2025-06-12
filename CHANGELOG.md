@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/loonghao/installer-analyzer/compare/v0.5.0...v0.6.0) (2025-06-12)
+
+
+### Features
+
+* add HTML report example image and optimize help command performance ([0287bdc](https://github.com/loonghao/installer-analyzer/commit/0287bdc2ea54becc725f3e86235ec7e638ac7506))
+
 ## [0.5.0](https://github.com/loonghao/installer-analyzer/compare/v0.4.0...v0.5.0) (2025-06-10)
 
 
