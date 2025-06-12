@@ -14,21 +14,27 @@ async fn main() {
 
     let cli = Cli::parse();
 
-    // Show startup banner
-    CliOutput::startup_banner(env!("CARGO_PKG_VERSION"));
+    // Only show startup banner and initialize logging for non-info commands
+    // This improves performance for --help and info commands
+    let is_info_command = matches!(cli.command, Commands::Info);
 
-    // Initialize logging
-    if let Err(e) = utils::init_logging(cli.verbose) {
-        eprintln!("Failed to initialize logging: {}", e);
-        process::exit(1);
-    }
+    if !is_info_command {
+        // Show startup banner
+        CliOutput::startup_banner(env!("CARGO_PKG_VERSION"));
 
-    // Check for admin privileges for sandbox operations
-    if matches!(cli.command, Commands::Sandbox { .. }) && !utils::is_admin() {
-        eprintln!(
-            "Warning: Sandbox analysis requires administrator privileges for full functionality."
-        );
-        eprintln!("Some features may not work correctly without elevated permissions.");
+        // Initialize logging
+        if let Err(e) = utils::init_logging(cli.verbose) {
+            eprintln!("Failed to initialize logging: {}", e);
+            process::exit(1);
+        }
+
+        // Check for admin privileges for sandbox operations
+        if matches!(cli.command, Commands::Sandbox { .. }) && !utils::is_admin() {
+            eprintln!(
+                "Warning: Sandbox analysis requires administrator privileges for full functionality."
+            );
+            eprintln!("Some features may not work correctly without elevated permissions.");
+        }
     }
 
     // Execute command
