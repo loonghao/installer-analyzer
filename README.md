@@ -39,6 +39,9 @@ A comprehensive Windows tool for analyzing software installation packages and mo
 - **JSON Export** - Machine-readable analysis results for automation
 - **Detailed Metadata** - Comprehensive package information display
 
+![HTML Report Example](docs/report.png)
+*Example of HTML report output with interactive file tree and detailed analysis*
+
 ### 🛠️ Developer & Enterprise Tools
 - **Powerful CLI** - Command-line interface with multiple analysis modes
 - **Modular Architecture** - Extensible analyzer framework with plugin support
