@@ -78,6 +78,7 @@ jobs:
         # Create a test version of the nuspec with local file
         $nuspec = Get-Content "chocolatey/installer-analyzer.nuspec" -Raw
         $nuspec = $nuspec -replace '\$version\$', '0.7.0-test'
+        $nuspec = $nuspec -replace '<id>installer-analyzer</id>', '<id>installer-analyzer-test</id>'
         Set-Content "chocolatey/installer-analyzer-test.nuspec" $nuspec
 
     - name: Create test install script
