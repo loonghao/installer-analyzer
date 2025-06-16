@@ -127,13 +127,16 @@ jobs:
       shell: pwsh
       run: |
         try {
-            Write-Host "Installing chocolatey package..." -ForegroundColor Green
-            choco install installer-analyzer-test --source chocolatey --force --yes --debug --verbose
-            
+            Write-Host "Installing chocolatey package from local source..." -ForegroundColor Green
+            # Use the absolute path to chocolatey directory as source
+            $chocolateyDir = Resolve-Path "chocolatey"
+            Write-Host "Using source directory: $chocolateyDir" -ForegroundColor Yellow
+            choco install installer-analyzer-test --source "$chocolateyDir" --force --yes --debug --verbose
+
             Write-Host "Testing installed executable..." -ForegroundColor Green
             installer-analyzer --version
             installer-analyzer --help
-            
+
             Write-Host "Chocolatey package test completed successfully!" -ForegroundColor Green
         } catch {
             Write-Error "Chocolatey package test failed: $($_.Exception.Message)"
