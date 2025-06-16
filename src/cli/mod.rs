@@ -93,4 +93,19 @@ pub enum Commands {
 
     /// Show information about supported formats
     Info,
+
+    /// Check for and install updates
+    Update {
+        /// Only check for updates without installing
+        #[arg(long)]
+        check_only: bool,
+
+        /// Force update even if current version is newer
+        #[arg(long)]
+        force: bool,
+
+        /// Skip confirmation prompts
+        #[arg(short, long)]
+        yes: bool,
+    },
 }

@@ -70,6 +70,11 @@ async fn main() {
             sandbox,
         } => commands::handle_batch(&input_dir, &output_dir, format.as_deref(), sandbox).await,
         Commands::Info => commands::handle_info().await,
+        Commands::Update {
+            check_only,
+            force,
+            yes,
+        } => commands::handle_update(check_only, force, yes).await,
     };
 
     // Handle result

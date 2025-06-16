@@ -70,3 +70,61 @@ jobs:
         fail_on_unmatched_files: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Prepare Chocolatey package
+      run: |
+        # Extract version from tag (remove 'v' prefix)
+        $version = "${{ needs.release-please.outputs.tag_name }}" -replace '^v', ''
+        Write-Host "Preparing Chocolatey package for version: $version"
+
+        # Calculate SHA256 checksum of the Windows binary
+        $binaryPath = "target/x86_64-pc-windows-msvc/release/installer-analyzer.exe"
+        $checksum = (Get-FileHash -Path $binaryPath -Algorithm SHA256).Hash
+        Write-Host "Binary SHA256: $checksum"
+
+        # Update nuspec file with version
+        $nuspecPath = "chocolatey/installer-analyzer.nuspec"
+        $nuspecContent = Get-Content $nuspecPath -Raw
+        $nuspecContent = $nuspecContent -replace '\$version\$', $version
+        Set-Content -Path $nuspecPath -Value $nuspecContent
+
+        # Update install script with checksum and download URL
+        $installScriptPath = "chocolatey/tools/chocolateyinstall.ps1"
+        $installContent = Get-Content $installScriptPath -Raw
+        $downloadUrl = "https://github.com/loonghao/installer-analyzer/releases/download/${{ needs.release-please.outputs.tag_name }}/installer-analyzer.exe"
+        $installContent = $installContent -replace "checksum64\s*=\s*''", "checksum64 = '$checksum'"
+        $installContent = $installContent -replace 'url64bit\s*=\s*"[^"]*"', "url64bit = '$downloadUrl'"
+        Set-Content -Path $installScriptPath -Value $installContent
+
+        Write-Host "Chocolatey package prepared successfully"
+      shell: pwsh
+
+    - name: Install Chocolatey
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        Write-Host "Chocolatey installed successfully"
+      shell: pwsh
+
+    - name: Build and publish Chocolatey package
+      if: env.CHOCOLATEY_API_KEY != ''
+      run: |
+        $version = "${{ needs.release-please.outputs.tag_name }}" -replace '^v', ''
+        Write-Host "Building Chocolatey package for version: $version"
+
+        # Build the package
+        choco pack chocolatey/installer-analyzer.nuspec --version $version
+
+        # List generated package
+        $packageFile = Get-ChildItem -Name "installer-analyzer.$version.nupkg"
+        Write-Host "Generated package: $packageFile"
+
+        # Publish to Chocolatey Community Repository
+        Write-Host "Publishing to Chocolatey Community Repository..."
+        choco push $packageFile --source https://push.chocolatey.org/ --api-key $env:CHOCOLATEY_API_KEY
+
+        Write-Host "Chocolatey package published successfully!"
+      env:
+        CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+      shell: pwsh

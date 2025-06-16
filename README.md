@@ -44,6 +44,8 @@ A comprehensive Windows tool for analyzing software installation packages and mo
 
 ### 🛠️ Developer & Enterprise Tools
 - **Powerful CLI** - Command-line interface with multiple analysis modes
+- **Auto-Update System** - Built-in update functionality with version checking
+- **Chocolatey Package** - Easy installation and management via package manager
 - **Modular Architecture** - Extensible analyzer framework with plugin support
 - **Windows-Native** - Designed specifically for Windows environments
 - **Batch Processing** - Analyze multiple packages simultaneously
@@ -54,7 +56,21 @@ A comprehensive Windows tool for analyzing software installation packages and mo
 
 ### Installation
 
-#### Option 1: Download Pre-built Binaries
+#### Option 1: Chocolatey (Recommended for Windows)
+Install directly from Chocolatey Community Repository:
+
+```powershell
+# Install installer-analyzer
+choco install installer-analyzer
+
+# Verify installation
+installer-analyzer --version
+
+# Update to latest version
+choco upgrade installer-analyzer
+```
+
+#### Option 2: Download Pre-built Binaries
 Download the latest release from [GitHub Releases](https://github.com/loonghao/installer-analyzer/releases):
 
 ```powershell
@@ -63,7 +79,7 @@ Invoke-WebRequest -Uri "https://github.com/loonghao/installer-analyzer/releases/
 .\installer-analyzer.exe --help
 ```
 
-#### Option 2: Build from Source
+#### Option 3: Build from Source
 ```bash
 git clone https://github.com/loonghao/installer-analyzer.git
 cd installer-analyzer
@@ -91,6 +107,12 @@ installer-analyzer formats
 
 # Extract files from package
 installer-analyzer extract setup.exe --output-dir ./extracted/
+
+# Check for updates
+installer-analyzer update --check-only
+
+# Install updates automatically
+installer-analyzer update
 ```
 
 ### Advanced Usage
@@ -266,6 +288,7 @@ cargo build --release --target x86_64-pc-windows-msvc
 ### User Documentation
 - [User Guide](docs/user-guide.md) - Comprehensive usage guide and tutorials
 - [CLI Reference](docs/cli-reference.md) - Complete command-line interface documentation
+- [Auto-Update Guide](docs/AUTO_UPDATE_GUIDE.md) - How to use the auto-update functionality
 - [Report Guide](docs/reports.md) - Understanding HTML and JSON reports
 - [Format Support](docs/formats.md) - Detailed format support and capabilities
 

@@ -10,6 +10,7 @@ pub mod core;
 pub mod monitoring;
 pub mod reporting;
 pub mod sandbox;
+pub mod updater;
 pub mod utils;
 
 // Re-export commonly used types
@@ -26,3 +27,6 @@ pub use sandbox::SandboxController;
 
 // Re-export reporting
 pub use reporting::ReportGenerator;
+
+// Re-export updater functionality
+pub use updater::{UpdateConfig, UpdateInfo, Updater};
