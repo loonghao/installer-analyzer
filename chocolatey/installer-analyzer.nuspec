@@ -80,7 +80,7 @@ installer-analyzer info
 ## Requirements
 
 - Windows 10 or later
-- No additional dependencies required (self-contained executable)
+- No additional dependencies required (fully self-contained executable with static CRT linking)
 
 ## Installation Notes
 
@@ -90,7 +90,7 @@ The tool includes automatic update functionality - use `installer-analyzer updat
     ]]></description>
     <releaseNotes>https://github.com/loonghao/installer-analyzer/releases</releaseNotes>
     <dependencies>
-      <!-- No dependencies - self-contained executable -->
+      <!-- No dependencies - self-contained executable with static CRT linking -->
     </dependencies>
   </metadata>
   <files>
