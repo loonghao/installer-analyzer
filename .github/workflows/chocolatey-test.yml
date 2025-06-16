@@ -1,0 +1,149 @@
+name: Chocolatey Package Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Build the application first
+  build:
+    name: Build Application
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm ci --prefer-offline
+        npm run build
+      shell: cmd
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        cache-targets: true
+        cache-all-crates: true
+
+    - name: Build release
+      run: cargo build --release --verbose
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: installer-analyzer-exe
+        path: target/release/installer-analyzer.exe
+        retention-days: 1
+
+  # Test chocolatey package
+  chocolatey-test:
+    name: Test Chocolatey Package
+    runs-on: windows-latest
+    needs: build
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: installer-analyzer-exe
+        path: artifacts/
+
+    - name: Install Chocolatey
+      uses: crazy-max/ghaction-chocolatey@v3
+      with:
+        args: --version
+
+    - name: Prepare chocolatey package for testing
+      shell: pwsh
+      run: |
+        # Copy the built executable to chocolatey tools directory
+        Copy-Item "artifacts/installer-analyzer.exe" "chocolatey/tools/installer-analyzer.exe" -Force
+        
+        # Create a test version of the nuspec with local file
+        $nuspec = Get-Content "chocolatey/installer-analyzer.nuspec" -Raw
+        $nuspec = $nuspec -replace '\$version\$', '0.7.0-test'
+        Set-Content "chocolatey/installer-analyzer-test.nuspec" $nuspec
+        
+        # Modify install script to use local file
+        $installScript = @'
+# Chocolatey install script for installer-analyzer (TEST VERSION)
+$ErrorActionPreference = 'Stop'
+$packageName = 'installer-analyzer'
+$toolsDir = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
+
+Write-Host "Installing $packageName (test version)..." -ForegroundColor Green
+
+# Use local file for testing
+$exePath = Join-Path $toolsDir "installer-analyzer.exe"
+if (-not (Test-Path $exePath)) {
+    throw "Installation failed: installer-analyzer.exe not found at $exePath"
+}
+
+Write-Host "Installation completed successfully!" -ForegroundColor Green
+Write-Host "Usage:" -ForegroundColor Yellow
+Write-Host "  installer-analyzer --help" -ForegroundColor White
+Write-Host "  installer-analyzer analyze setup.exe" -ForegroundColor White
+
+# Verify installation
+try {
+    $version = & "$exePath" --version 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Verification successful: $version" -ForegroundColor Green
+    } else {
+        Write-Warning "Could not verify installation, but executable exists"
+    }
+} catch {
+    Write-Warning "Could not verify installation: $($_.Exception.Message)"
+}
+
+Write-Host "installer-analyzer has been installed and is ready to use!" -ForegroundColor Green
+'@
+        Set-Content "chocolatey/tools/chocolateyinstall.ps1" $installScript
+
+    - name: Create chocolatey package
+      uses: crazy-max/ghaction-chocolatey@v3
+      with:
+        args: pack chocolatey/installer-analyzer-test.nuspec --outputdirectory chocolatey/
+
+    - name: Test chocolatey package installation
+      shell: pwsh
+      run: |
+        try {
+            Write-Host "Installing chocolatey package..." -ForegroundColor Green
+            choco install installer-analyzer-test --source chocolatey --force --yes --debug --verbose
+            
+            Write-Host "Testing installed executable..." -ForegroundColor Green
+            installer-analyzer --version
+            installer-analyzer --help
+            
+            Write-Host "Chocolatey package test completed successfully!" -ForegroundColor Green
+        } catch {
+            Write-Error "Chocolatey package test failed: $($_.Exception.Message)"
+            throw
+        }
+
+    - name: Cleanup test package
+      if: always()
+      shell: pwsh
+      run: |
+        try {
+            choco uninstall installer-analyzer-test --yes --force
+        } catch {
+            Write-Warning "Failed to uninstall test package: $($_.Exception.Message)"
+        }

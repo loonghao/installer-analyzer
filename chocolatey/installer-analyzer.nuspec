@@ -90,7 +90,7 @@ The tool includes automatic update functionality - use `installer-analyzer updat
     ]]></description>
     <releaseNotes>https://github.com/loonghao/installer-analyzer/releases</releaseNotes>
     <dependencies>
-      <!-- No dependencies - self-contained executable -->
+      <dependency id="vcredist2015" version="14.0.24215.20170201" />
     </dependencies>
   </metadata>
   <files>
