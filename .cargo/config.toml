@@ -1,12 +1,13 @@
 # Cargo configuration for faster builds
 
 [build]
-# Use faster linker on Windows
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+# Build configuration - target-specific rustflags are defined below
 
 [target.x86_64-pc-windows-msvc]
 # Use LLD linker for faster linking
 linker = "rust-lld"
+# Static linking to avoid MSVC runtime dependencies
+rustflags = ["-C", "target-feature=+crt-static"]
 
 [profile.dev]
 # Faster debug builds
