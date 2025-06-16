@@ -97,6 +97,10 @@ jobs:
         $script += '    throw "Installation failed: installer-analyzer.exe not found at $exePath"' + "`n"
         $script += '}' + "`n"
         $script += '' + "`n"
+        $script += '# Create shim for the executable so it can be found in PATH' + "`n"
+        $script += 'Write-Host "Creating shim for installer-analyzer..." -ForegroundColor Green' + "`n"
+        $script += 'Install-BinFile -Name "installer-analyzer" -Path $exePath' + "`n"
+        $script += '' + "`n"
         $script += 'Write-Host "Installation completed successfully!" -ForegroundColor Green' + "`n"
         $script += 'Write-Host "Usage:" -ForegroundColor Yellow' + "`n"
         $script += 'Write-Host "  installer-analyzer --help" -ForegroundColor White' + "`n"
@@ -128,14 +132,57 @@ jobs:
       run: |
         try {
             Write-Host "Installing chocolatey package from local source..." -ForegroundColor Green
+
+            # List files in chocolatey directory to debug
+            Write-Host "Files in chocolatey directory:" -ForegroundColor Yellow
+            Get-ChildItem "chocolatey" -Recurse | Format-Table Name, FullName
+
             # Use the absolute path to chocolatey directory as source
             $chocolateyDir = Resolve-Path "chocolatey"
             Write-Host "Using source directory: $chocolateyDir" -ForegroundColor Yellow
-            choco install installer-analyzer-test --source "$chocolateyDir" --force --yes --debug --verbose
+
+            # Install the package and check exit code
+            $installResult = choco install installer-analyzer-test --source "$chocolateyDir" --force --yes --debug --verbose
+            if ($LASTEXITCODE -ne 0) {
+                throw "Chocolatey installation failed with exit code $LASTEXITCODE"
+            }
+
+            Write-Host "Package installed successfully!" -ForegroundColor Green
+
+            # Refresh environment variables to pick up any PATH changes
+            $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 
             Write-Host "Testing installed executable..." -ForegroundColor Green
-            installer-analyzer --version
-            installer-analyzer --help
+            Write-Host "Current PATH: $env:PATH" -ForegroundColor Yellow
+
+            # Try to find the executable
+            $exePath = Get-Command installer-analyzer -ErrorAction SilentlyContinue
+            if ($exePath) {
+                Write-Host "Found installer-analyzer at: $($exePath.Source)" -ForegroundColor Green
+                & $exePath.Source --version
+                & $exePath.Source --help
+            } else {
+                # Try to find it in common chocolatey locations
+                $commonPaths = @(
+                    "$env:ChocolateyInstall\bin\installer-analyzer.exe",
+                    "$env:ChocolateyInstall\lib\installer-analyzer-test\tools\installer-analyzer.exe"
+                )
+
+                $found = $false
+                foreach ($path in $commonPaths) {
+                    if (Test-Path $path) {
+                        Write-Host "Found installer-analyzer at: $path" -ForegroundColor Green
+                        & $path --version
+                        & $path --help
+                        $found = $true
+                        break
+                    }
+                }
+
+                if (-not $found) {
+                    throw "installer-analyzer executable not found after installation"
+                }
+            }
 
             Write-Host "Chocolatey package test completed successfully!" -ForegroundColor Green
         } catch {
