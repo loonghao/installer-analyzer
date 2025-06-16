@@ -80,19 +80,19 @@ jobs:
         $nuspec = $nuspec -replace '\$version\$', '0.7.0-test'
         Set-Content "chocolatey/installer-analyzer-test.nuspec" $nuspec
         
-        # Modify install script to use local file
-        $installScript = @'
+        # Create a simple install script for testing
+        $installScript = @"
 # Chocolatey install script for installer-analyzer (TEST VERSION)
-$ErrorActionPreference = 'Stop'
-$packageName = 'installer-analyzer'
-$toolsDir = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
+`$ErrorActionPreference = 'Stop'
+`$packageName = 'installer-analyzer'
+`$toolsDir = "`$(Split-Path -parent `$MyInvocation.MyCommand.Definition)"
 
-Write-Host "Installing $packageName (test version)..." -ForegroundColor Green
+Write-Host "Installing `$packageName (test version)..." -ForegroundColor Green
 
 # Use local file for testing
-$exePath = Join-Path $toolsDir "installer-analyzer.exe"
-if (-not (Test-Path $exePath)) {
-    throw "Installation failed: installer-analyzer.exe not found at $exePath"
+`$exePath = Join-Path `$toolsDir "installer-analyzer.exe"
+if (-not (Test-Path `$exePath)) {
+    throw "Installation failed: installer-analyzer.exe not found at `$exePath"
 }
 
 Write-Host "Installation completed successfully!" -ForegroundColor Green
@@ -102,18 +102,18 @@ Write-Host "  installer-analyzer analyze setup.exe" -ForegroundColor White
 
 # Verify installation
 try {
-    $version = & "$exePath" --version 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Verification successful: $version" -ForegroundColor Green
+    `$version = & "`$exePath" --version 2>&1
+    if (`$LASTEXITCODE -eq 0) {
+        Write-Host "Verification successful: `$version" -ForegroundColor Green
     } else {
         Write-Warning "Could not verify installation, but executable exists"
     }
 } catch {
-    Write-Warning "Could not verify installation: $($_.Exception.Message)"
+    Write-Warning "Could not verify installation: `$(`$_.Exception.Message)"
 }
 
 Write-Host "installer-analyzer has been installed and is ready to use!" -ForegroundColor Green
-'@
+"@
         Set-Content "chocolatey/tools/chocolateyinstall.ps1" $installScript
 
     - name: Create chocolatey package
