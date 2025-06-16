@@ -98,6 +98,9 @@ PGO builds are automatically performed in CI for main branch pushes:
 - Standard release builds are created for all pushes
 - PGO-optimized builds are created only for main branch pushes
 - Profile data is cached between builds for efficiency
+- **Enhanced Error Handling**: Automatic fallback to standard build if PGO fails
+- **Multiple LLVM Installation Methods**: Chocolatey, winget, and Rust built-in tools
+- **Robust Tool Detection**: Extended search paths and verification
 
 ## Performance Benefits
 
@@ -133,6 +136,25 @@ PGO typically provides:
 - Clean previous builds: `cargo clean`
 - Remove old profile data: `rm -rf pgo-data`
 - Check Rust toolchain version compatibility
+
+### LLVM Tools Issues (Resolved)
+
+**Previous Issue**: LLVM tools installation failures in CI
+**Solution**: Enhanced installation with multiple fallback methods:
+
+1. **Chocolatey**: `choco install llvm -y --no-progress`
+2. **Winget**: `winget install LLVM.LLVM --silent`
+3. **Rust Built-in**: Automatic fallback to Rust's LLVM tools
+4. **Graceful Degradation**: Continue without llvm-profdata if unavailable
+
+### CI Build Failures (Resolved)
+
+**Previous Issue**: PGO build failures causing CI to fail
+**Solution**: Automatic fallback strategy:
+
+- If PGO build fails, automatically fall back to standard release build
+- Consistent output directory structure maintained
+- Build artifacts always available regardless of PGO success
 
 ### Performance Not Improved
 

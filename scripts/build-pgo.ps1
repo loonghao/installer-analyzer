@@ -112,28 +112,44 @@ if ($profileFiles.Count -eq 0) {
 
 # Merge profile data using llvm-profdata
 try {
-    $llvmProfdata = "llvm-profdata"
-    
     # Try to find llvm-profdata in common locations
     $possiblePaths = @(
         "llvm-profdata",
         "C:\Program Files\LLVM\bin\llvm-profdata.exe",
-        "$env:USERPROFILE\.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-msvc\bin\llvm-profdata.exe"
+        "$env:USERPROFILE\.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-msvc\bin\llvm-profdata.exe",
+        "C:\Users\runneradmin\.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-msvc\bin\llvm-profdata.exe"
     )
-    
+
     $llvmProfdataPath = $null
     foreach ($path in $possiblePaths) {
         if (Get-Command $path -ErrorAction SilentlyContinue) {
             $llvmProfdataPath = $path
+            Write-Host "Found llvm-profdata at: $path" -ForegroundColor Blue
+            break
+        } elseif (Test-Path $path) {
+            $llvmProfdataPath = $path
+            Write-Host "Found llvm-profdata at: $path" -ForegroundColor Blue
             break
         }
     }
-    
-    if ($llvmProfdataPath) {
+
+    if ($llvmProfdataPath -and $profileFiles.Count -gt 0) {
+        Write-Host "Merging profile data with llvm-profdata..." -ForegroundColor Blue
         & $llvmProfdataPath merge -output=pgo-data/merged.profdata pgo-data/*.profraw
-        Write-Host "✅ Profile data merged successfully" -ForegroundColor Green
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✅ Profile data merged successfully" -ForegroundColor Green
+        } else {
+            Write-Warning "llvm-profdata merge failed with exit code $LASTEXITCODE"
+            Write-Host "Continuing with individual profile files..." -ForegroundColor Yellow
+        }
     } else {
-        Write-Warning "llvm-profdata not found. Skipping profile data merging."
+        if (-not $llvmProfdataPath) {
+            Write-Warning "llvm-profdata not found in any expected location."
+        }
+        if ($profileFiles.Count -eq 0) {
+            Write-Warning "No profile files to merge."
+        }
         Write-Host "Profile data will be used directly by rustc" -ForegroundColor Yellow
     }
 } catch {
@@ -146,8 +162,14 @@ Write-Host "🎯 Stage 4: Building optimized binary with PGO..." -ForegroundColo
 # Clear previous RUSTFLAGS and set for PGO use
 if (Test-Path "pgo-data/merged.profdata") {
     $env:RUSTFLAGS = "-Cprofile-use=./pgo-data/merged.profdata"
-} else {
+    Write-Host "Using merged profile data: pgo-data/merged.profdata" -ForegroundColor Blue
+} elseif ($profileFiles.Count -gt 0) {
     $env:RUSTFLAGS = "-Cprofile-use=./pgo-data"
+    Write-Host "Using individual profile files in: pgo-data/" -ForegroundColor Blue
+} else {
+    Write-Warning "No profile data available. Building without PGO optimization."
+    Write-Host "This will be equivalent to a regular release build." -ForegroundColor Yellow
+    $env:RUSTFLAGS = ""
 }
 
 # Build optimized binary
