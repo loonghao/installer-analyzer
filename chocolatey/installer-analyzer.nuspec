@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>installer-analyzer</id>
+    <version>$version$</version>
+    <packageSourceUrl>https://github.com/loonghao/installer-analyzer</packageSourceUrl>
+    <owners>loonghao</owners>
+    <title>Installer Analyzer</title>
+    <authors>loonghao</authors>
+    <projectUrl>https://github.com/loonghao/installer-analyzer</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/loonghao/installer-analyzer/main/docs/icon.png</iconUrl>
+    <copyright>2025 loonghao</copyright>
+    <licenseUrl>https://github.com/loonghao/installer-analyzer/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/loonghao/installer-analyzer</projectSourceUrl>
+    <docsUrl>https://github.com/loonghao/installer-analyzer/blob/main/README.md</docsUrl>
+    <bugTrackerUrl>https://github.com/loonghao/installer-analyzer/issues</bugTrackerUrl>
+    <tags>installer analysis windows msi nsis inno-setup msix python-wheel security cli tool</tags>
+    <summary>A comprehensive Windows tool for analyzing software installation packages and monitoring installation behavior</summary>
+    <description><![CDATA[
+# Installer Analyzer
+
+A comprehensive Windows tool for analyzing software installation packages and monitoring installation behavior. Supports 8 major installer formats with detailed analysis, interactive reporting, and modern web-based visualization.
+
+## Features
+
+### Multi-Format Support (8 Formats)
+- **MSI** - Microsoft Installer packages with database parsing
+- **WiX** - WiX Toolset generated MSI with extension detection
+- **NSIS** - Nullsoft Scriptable Install System with script analysis
+- **Squirrel** - Electron application installers with auto-update detection
+- **InnoSetup** - Inno Setup installers with script parsing
+- **InstallShield** - Enterprise installation packages with version detection
+- **MSIX/AppX** - Modern Windows app packages with manifest parsing
+- **Python Wheel** - Python package format with metadata extraction
+
+### Advanced Analysis Capabilities
+- **File Extraction** - Extract and analyze embedded files with type detection
+- **Registry Operations** - Detect and analyze registry modifications
+- **Metadata Extraction** - Product info, version, publisher, certificates
+- **Security Analysis** - File signatures, digital certificates, trust validation
+- **Installation Simulation** - Sandbox environment support (planned)
+- **Dependency Analysis** - Identify package dependencies and requirements
+
+### Interactive Reporting & Visualization
+- **Modern HTML Reports** - Responsive web interface with Bootstrap 5
+- **Interactive File Tree** - Hierarchical structure with expand/collapse
+- **Real-time Search** - Filter files and directories instantly
+- **Visual Charts** - File type distribution, size statistics, and trends
+- **JSON Export** - Machine-readable analysis results for automation
+- **Detailed Metadata** - Comprehensive package information display
+
+### Developer & Enterprise Tools
+- **Powerful CLI** - Command-line interface with multiple analysis modes
+- **Modular Architecture** - Extensible analyzer framework with plugin support
+- **Windows-Native** - Designed specifically for Windows environments
+- **Batch Processing** - Analyze multiple packages simultaneously
+- **API Integration** - Programmatic access for CI/CD pipelines
+- **Performance Optimized** - Efficient memory usage and fast processing
+
+## Usage
+
+```powershell
+# Analyze an installer package
+installer-analyzer analyze setup.exe
+
+# Generate HTML report with interactive file tree
+installer-analyzer analyze setup.msi --output report.html
+
+# JSON output for automation and CI/CD
+installer-analyzer analyze app.msix --format json --output analysis.json
+
+# Check for updates
+installer-analyzer update --check-only
+
+# Show supported formats
+installer-analyzer info
+```
+
+## Requirements
+
+- Windows 10 or later
+- No additional dependencies required (self-contained executable)
+
+## Installation Notes
+
+This package installs the installer-analyzer executable to your PATH, making it available from any command prompt or PowerShell session.
+
+The tool includes automatic update functionality - use `installer-analyzer update` to check for and install updates.
+    ]]></description>
+    <releaseNotes>https://github.com/loonghao/installer-analyzer/releases</releaseNotes>
+    <dependencies>
+      <!-- No dependencies - self-contained executable -->
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

@@ -41,6 +41,8 @@
 
 ### 🛠️ 开发者与企业工具
 - **强大的 CLI** - 命令行界面，支持多种分析模式
+- **自动更新系统** - 内置更新功能，支持版本检查
+- **Chocolatey 包** - 通过包管理器轻松安装和管理
 - **模块化架构** - 可扩展的分析器框架，支持插件
 - **Windows 原生** - 专为 Windows 环境设计
 - **批量处理** - 同时分析多个包
@@ -51,7 +53,21 @@
 
 ### 安装
 
-#### 方式一：下载预编译二进制文件
+#### 方式一：Chocolatey（推荐 Windows 用户）
+直接从 Chocolatey 社区仓库安装：
+
+```powershell
+# 安装 installer-analyzer
+choco install installer-analyzer
+
+# 验证安装
+installer-analyzer --version
+
+# 更新到最新版本
+choco upgrade installer-analyzer
+```
+
+#### 方式二：下载预编译二进制文件
 从 [GitHub Releases](https://github.com/loonghao/installer-analyzer/releases) 下载最新版本：
 
 ```powershell
@@ -60,7 +76,7 @@ Invoke-WebRequest -Uri "https://github.com/loonghao/installer-analyzer/releases/
 .\installer-analyzer.exe --help
 ```
 
-#### 方式二：从源码构建
+#### 方式三：从源码构建
 ```bash
 git clone https://github.com/loonghao/installer-analyzer.git
 cd installer-analyzer
@@ -88,6 +104,12 @@ installer-analyzer formats
 
 # 从包中提取文件
 installer-analyzer extract setup.exe --output-dir ./extracted/
+
+# 检查更新
+installer-analyzer update --check-only
+
+# 自动安装更新
+installer-analyzer update
 ```
 
 ### 高级用法
@@ -263,6 +285,7 @@ cargo build --release --target x86_64-pc-windows-msvc
 ### 用户文档
 - [用户指南](docs/user-guide.md) - 全面的使用指南和教程
 - [CLI 参考](docs/cli-reference.md) - 完整的命令行界面文档
+- [自动更新指南](docs/AUTO_UPDATE_GUIDE_zh.md) - 如何使用自动更新功能
 - [报告指南](docs/reports.md) - 理解 HTML 和 JSON 报告
 - [格式支持](docs/formats.md) - 详细的格式支持和功能
 

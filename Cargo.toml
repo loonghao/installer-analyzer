@@ -60,7 +60,14 @@ regex = "1.0"
 sha2 = "0.10"
 hex = "0.4"
 
+# HTTP client for auto-update functionality
+reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
 
+# Version comparison for auto-update
+semver = "1.0"
+
+# Async utilities for streaming downloads
+futures-util = "0.3"
 
 # Open browser
 open = "5.0"

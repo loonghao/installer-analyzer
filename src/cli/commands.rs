@@ -5,6 +5,7 @@ use crate::cli::output::CliOutput;
 use crate::core::{AnalysisResult, AnalyzerError, Result, SandboxConfig};
 use crate::reporting::{ReportFormat, ReportGenerator, Reporter};
 use crate::sandbox::{Sandbox, SandboxController};
+use crate::updater::Updater;
 use chrono::Utc;
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -288,6 +289,144 @@ pub async fn handle_info() -> Result<()> {
     println!("  installer-analyzer analyze setup.exe --format json");
     println!("  installer-analyzer sandbox installer.exe --timeout 300");
     println!("  installer-analyzer batch ./installers/ ./reports/ --format html");
+
+    Ok(())
+}
+
+/// Handle the update command
+pub async fn handle_update(check_only: bool, force: bool, yes: bool) -> Result<()> {
+    CliOutput::section_header("Auto-Update");
+
+    // Create updater with default configuration
+    let updater = Updater::new();
+
+    // Create progress spinner for update check
+    let spinner = CliOutput::create_spinner("Checking for updates...");
+
+    // Check for available updates
+    let update_info = match updater.check_for_updates().await {
+        Ok(info) => {
+            spinner.finish_with_message("✓ Update check completed");
+            info
+        }
+        Err(e) => {
+            spinner.finish_with_message("✗ Update check failed");
+            return Err(AnalyzerError::generic(format!(
+                "Failed to check for updates: {}",
+                e
+            )));
+        }
+    };
+
+    // Display current and latest version information
+    CliOutput::info(&format!("Current version: {}", update_info.current_version));
+    CliOutput::info(&format!("Latest version: {}", update_info.latest_version));
+
+    if !update_info.update_available && !force {
+        CliOutput::success("You are running the latest version!");
+        return Ok(());
+    }
+
+    if force && !update_info.update_available {
+        CliOutput::warning("Forcing update even though current version is up to date");
+    }
+
+    // Display update information
+    if update_info.update_available {
+        CliOutput::info("🎉 A new version is available!");
+
+        if let Some(release_notes) = &update_info.release_notes {
+            if !release_notes.trim().is_empty() {
+                CliOutput::info("Release notes:");
+                println!("{}", release_notes.trim());
+                println!();
+            }
+        }
+
+        // Show file size if available
+        if update_info.file_size > 0 {
+            let size_mb = update_info.file_size as f64 / 1024.0 / 1024.0;
+            CliOutput::info(&format!("Download size: {:.1} MB", size_mb));
+        }
+    }
+
+    // If check-only mode, exit here
+    if check_only {
+        if update_info.update_available {
+            CliOutput::info("Run 'installer-analyzer update' to install the update");
+        }
+        return Ok(());
+    }
+
+    // Check if we can perform self-update
+    #[cfg(windows)]
+    {
+        use crate::updater::windows::{can_self_update, get_update_strategy};
+
+        let strategy = get_update_strategy();
+        CliOutput::info(&format!("Update strategy: {}", strategy));
+
+        if !can_self_update() {
+            CliOutput::warning("Cannot write to the current executable location.");
+            CliOutput::warning("You may need to run as administrator or move the executable to a writable location.");
+
+            if !yes {
+                CliOutput::info("Continue anyway? The update may fail. (y/N)");
+                let mut input = String::new();
+                std::io::stdin()
+                    .read_line(&mut input)
+                    .map_err(|e| AnalyzerError::generic(format!("Failed to read input: {}", e)))?;
+
+                if !input.trim().to_lowercase().starts_with('y') {
+                    CliOutput::info("Update cancelled");
+                    return Ok(());
+                }
+            }
+        }
+    }
+
+    #[cfg(not(windows))]
+    {
+        CliOutput::warning("Self-update is currently only supported on Windows");
+        CliOutput::info("Please download the latest version manually from the releases page");
+        return Ok(());
+    }
+
+    // Confirm update installation
+    if !yes {
+        CliOutput::info(&format!(
+            "Install update {} → {}? (y/N)",
+            update_info.current_version, update_info.latest_version
+        ));
+
+        let mut input = String::new();
+        std::io::stdin()
+            .read_line(&mut input)
+            .map_err(|e| AnalyzerError::generic(format!("Failed to read input: {}", e)))?;
+
+        if !input.trim().to_lowercase().starts_with('y') {
+            CliOutput::info("Update cancelled");
+            return Ok(());
+        }
+    }
+
+    // Perform the update
+    CliOutput::info("Starting update process...");
+    CliOutput::warning("The application will restart after the update");
+
+    let update_spinner = CliOutput::create_spinner("Downloading update...");
+
+    match updater.perform_update(&update_info).await {
+        Ok(_) => {
+            // This should not be reached as perform_update exits the process
+            update_spinner.finish_with_message("✓ Update completed");
+            CliOutput::success("Update installed successfully!");
+        }
+        Err(e) => {
+            update_spinner.finish_with_message("✗ Update failed");
+            return Err(AnalyzerError::generic(format!("Update failed: {}", e)));
+        }
+    }
 
     Ok(())
 }
