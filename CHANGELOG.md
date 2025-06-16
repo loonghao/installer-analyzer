@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/loonghao/installer-analyzer/compare/v0.6.0...v0.7.0) (2025-06-16)
+
+
+### Features
+
+* add comprehensive auto-update functionality with Chocolatey support ([5888744](https://github.com/loonghao/installer-analyzer/commit/5888744672bb82f30ef090112248acbe80d8b2b8))
+
+
+### Bug Fixes
+
+* improve PGO build robustness and error handling ([bc9687a](https://github.com/loonghao/installer-analyzer/commit/bc9687a1f0f27665a81369b2018f8e330cefaaf9))
+
 ## [0.6.0](https://github.com/loonghao/installer-analyzer/compare/v0.5.0...v0.6.0) (2025-06-12)
 
 
