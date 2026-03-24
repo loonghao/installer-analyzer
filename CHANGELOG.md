@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.8.0](https://github.com/loonghao/installer-analyzer/compare/v0.7.0...v0.8.0) (2026-03-24)
+
+
+### Features
+
+* enable static CRT linking for fully independent executable ([4c99e36](https://github.com/loonghao/installer-analyzer/commit/4c99e361deb3b59a77ab634f7d485b755ee3d591))
+
+
+### Bug Fixes
+
+* add vcredist dependency and chocolatey testing workflow ([c502443](https://github.com/loonghao/installer-analyzer/commit/c502443883c4c55f79590397db64e9660b47ffec))
+* correct chocolatey package ID for testing ([c663764](https://github.com/loonghao/installer-analyzer/commit/c66376438fc27479065cf96ce1ae8ef53a04aa43))
+* correct YAML syntax in chocolatey-test workflow ([bda58c4](https://github.com/loonghao/installer-analyzer/commit/bda58c4771224aa6f854a5550a6f85e0074e20a5))
+* improve chocolatey package testing following best practices ([e1b747c](https://github.com/loonghao/installer-analyzer/commit/e1b747c0c128f0b8745c2d5ae35cfdf9b54ccb0a))
+* improve chocolatey package testing with proper shim creation ([b8d122f](https://github.com/loonghao/installer-analyzer/commit/b8d122f80b88367362ed20560fc2e51d0ed27805))
+* resolve YAML syntax issues in chocolatey-test workflow ([460beb1](https://github.com/loonghao/installer-analyzer/commit/460beb105ebb4f7d8847bcd4f8ae7024094e9920))
+* use local directory as chocolatey package source ([65a772e](https://github.com/loonghao/installer-analyzer/commit/65a772eb6329005abbfcbf0fd7fddc972e9ae583))
+
 ## [0.7.0](https://github.com/loonghao/installer-analyzer/compare/v0.6.0...v0.7.0) (2025-06-16)
 
 
