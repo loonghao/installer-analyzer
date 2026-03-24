@@ -298,6 +298,8 @@ jobs:
         path: target/release/installer-analyzer.exe
         retention-days: 30
 
+
+
   # PGO optimized build job
   build-pgo:
     name: Build PGO Optimized
